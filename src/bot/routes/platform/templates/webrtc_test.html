@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>WebRTC Voice Agent</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Oxygen, Ubuntu, Cantarell, sans-serif;
+                background-color: #f9fafb;
+                color: #111827;
+            }
+
+            .header {
+                background-color: white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                padding: 24px;
+            }
+
+            .header-content {
+                max-width: 1280px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            h1 {
+                font-size: 30px;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .back-btn {
+                background-color: #6b7280;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .back-btn:hover {
+                background-color: #4b5563;
+            }
+
+            .container {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 24px;
+            }
+
+            .test-card {
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                margin-bottom: 24px;
+            }
+
+            .test-header {
+                padding: 16px 24px;
+                border-bottom: 1px solid #e5e7eb;
+                background-color: #f8fafc;
+            }
+
+            .test-header h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 4px;
+            }
+
+            .test-header p {
+                font-size: 14px;
+                color: #6b7280;
+            }
+
+            .test-content {
+                padding: 24px;
+            }
+
+            .status-section {
+                margin-bottom: 24px;
+            }
+
+            .status-box {
+                padding: 12px 16px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                font-weight: 500;
+                display: none;
+            }
+
+            .status-box.loading {
+                background-color: #fef3c7;
+                color: #92400e;
+                border: 1px solid #fbbf24;
+            }
+
+            .status-box.ready {
+                background-color: #d1fae5;
+                color: #065f46;
+                border: 1px solid #10b981;
+            }
+
+            .status-box.error {
+                background-color: #fee2e2;
+                color: #991b1b;
+                border: 1px solid #f87171;
+            }
+
+            .status-box.show {
+                display: block;
+            }
+
+            .config-section {
+                background-color: #f9fafb;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .config-section h3 {
+                margin: 0 0 12px 0;
+                font-size: 16px;
+                color: #374151;
+            }
+
+            .form-row {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 12px;
+            }
+
+            .form-group {
+                flex: 1;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 4px;
+                font-weight: 500;
+                color: #374151;
+                font-size: 14px;
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 8px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                font-size: 14px;
+            }
+
+            .form-group input:focus {
+                outline: none;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .form-group small {
+                color: #6b7280;
+                font-size: 12px;
+                margin-top: 4px;
+                display: block;
+            }
+
+            .controls-section {
+                display: flex;
+                gap: 12px;
+                margin-bottom: 16px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s;
+            }
+
+            .btn-primary {
+                background: #2563eb;
+                color: white;
+            }
+
+            .btn-primary:hover:not(:disabled) {
+                background: #1d4ed8;
+            }
+
+            .btn-danger {
+                background: #dc2626;
+                color: white;
+            }
+
+            .btn-danger:hover:not(:disabled) {
+                background: #b91c1c;
+            }
+
+            .btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .info-section {
+                background-color: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 8px;
+                padding: 16px;
+            }
+
+            .info-section h3 {
+                margin: 0 0 8px 0;
+                color: #0c4a6e;
+                font-size: 14px;
+            }
+
+            .info-section p {
+                margin: 4px 0;
+                color: #0369a1;
+                font-size: 12px;
+            }
+
+            .bot-info {
+                background-color: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 8px;
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+
+            .bot-info h3 {
+                margin: 0 0 8px 0;
+                color: #166534;
+                font-size: 14px;
+            }
+
+            .bot-info p {
+                margin: 4px 0;
+                color: #15803d;
+                font-size: 12px;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1>WebRTC Voice Agent</h1>
+                <button class="back-btn" id="backBtn">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path d="m12 19-7-7 7-7"></path>
+                        <path d="M19 12H5"></path>
+                    </svg>
+                    Back to Platform
+                </button>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="container">
+            <!-- Bot Info Card -->
+            <div class="test-card">
+                <div class="test-header">
+                    <h2>Bot Information</h2>
+                    <p>Testing bot with WebRTC transport</p>
+                </div>
+                <div class="test-content">
+                    <div class="bot-info">
+                        <h3>Selected Bot</h3>
+                        <p>
+                            <strong>Bot ID:</strong>
+                            <span id="botId">Loading...</span>
+                        </p>
+                        <p>
+                            <strong>Bot Name:</strong>
+                            <span id="botName">Loading...</span>
+                        </p>
+                        <p><strong>Transport:</strong> WebRTC</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WebRTC Testing Card -->
+            <div class="test-card">
+                <div class="test-header">
+                    <h2>WebRTC Audio Testing</h2>
+                    <p>
+                        Test your bot with real-time audio using WebRTC
+                        transport
+                    </p>
+                </div>
+                <div class="test-content">
+                    <div class="status-section">
+                        <div id="statusBox" class="status-box ready">
+                            <div id="statusText">Ready to connect</div>
+                        </div>
+                    </div>
+
+                    <div class="config-section">
+                        <h3>Connection Configuration</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="user-id-input">User ID</label>
+                                <input
+                                    type="text"
+                                    id="user-id-input"
+                                    placeholder="Enter your user ID"
+                                />
+                                <small
+                                    >Enter a unique user ID for this test
+                                    session.</small
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="controls-section">
+                        <button id="connect-btn" class="btn btn-primary">
+                            Connect
+                        </button>
+                    </div>
+
+                    <div class="info-section">
+                        <h3>Connection Information</h3>
+                        <p>
+                            <strong>Status:</strong>
+                            <span id="connectionStatus">Disconnected</span>
+                        </p>
+                        <p><strong>Transport:</strong> WebRTC (Peer-to-Peer)</p>
+                        <p>
+                            <strong>Audio Format:</strong> Real-time
+                            bidirectional audio
+                        </p>
+                        <p>
+                            <strong>Usage:</strong> Real-time audio testing
+                            without Twilio/Plivo
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <audio id="audio-el" autoplay></audio>
+
+        <script>
+            // Extract bot_id from URL query parameters
+            function getBotIdFromUrl() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const botId = urlParams.get("bot_id");
+                const botName = urlParams.get("bot_name") || "Unknown Bot";
+
+                // Update the page title to show bot name
+                if (botName && botName !== "Unknown Bot") {
+                    document.title = `WebRTC Voice Agent - ${botName}`;
+                }
+
+                return botId;
+            }
+            function getWebRTCBaseUrl() {
+                const protocol = window.location.protocol;
+                const host = window.location.host;
+                return `${protocol}//${host}`;
+            }
+
+            const botId = getBotIdFromUrl();
+            console.log("Extracted botId:", botId);
+
+            const statusBox = document.getElementById("statusBox");
+            const statusText = document.getElementById("statusText");
+            const connectionStatus =
+                document.getElementById("connectionStatus");
+            const buttonEl = document.getElementById("connect-btn");
+            const audioEl = document.getElementById("audio-el");
+            const botIdEl = document.getElementById("botId");
+            const botNameEl = document.getElementById("botName");
+            const userIdInput = document.getElementById("user-id-input");
+
+            // Update bot info display
+            if (botId) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const botName = urlParams.get("bot_name") || "Unknown Bot";
+                botIdEl.textContent = botId;
+                botNameEl.textContent = botName;
+            } else {
+                botIdEl.textContent = "Error: Bot ID not found";
+                botNameEl.textContent = "Error";
+                updateStatus("error", "Error: Bot ID not found in URL");
+            }
+
+            let connected = false;
+            let peerConnection = null;
+
+            // Function to update button state based on user ID input
+            const updateButtonState = () => {
+                const hasUserId = userIdInput.value.trim().length > 0;
+                if (!connected) {
+                    buttonEl.disabled = !hasUserId;
+                }
+            };
+
+            // Add event listener to user ID input
+            userIdInput.addEventListener("input", updateButtonState);
+            userIdInput.addEventListener("change", updateButtonState);
+
+            // Initialize button state
+            updateButtonState();
+
+            // Back button functionality
+            document.getElementById("backBtn").addEventListener("click", () => {
+                window.location.href = "/";
+            });
+
+            // Status update functions
+            function updateStatus(type, message) {
+                statusBox.className = `status-box ${type} show`;
+                statusText.textContent = message;
+            }
+
+            function updateConnectionStatus(status) {
+                connectionStatus.textContent = status;
+            }
+
+            const waitForIceGatheringComplete = async (
+                pc,
+                timeoutMs = 2000,
+            ) => {
+                if (pc.iceGatheringState === "complete") return;
+                console.log(
+                    "Waiting for ICE gathering to complete. Current state:",
+                    pc.iceGatheringState,
+                );
+                return new Promise((resolve) => {
+                    let timeoutId;
+                    const checkState = () => {
+                        console.log(
+                            "icegatheringstatechange:",
+                            pc.iceGatheringState,
+                        );
+                        if (pc.iceGatheringState === "complete") {
+                            cleanup();
+                            resolve();
+                        }
+                    };
+                    const onTimeout = () => {
+                        console.warn(
+                            `ICE gathering timed out after ${timeoutMs} ms.`,
+                        );
+                        cleanup();
+                        resolve();
+                    };
+                    const cleanup = () => {
+                        pc.removeEventListener(
+                            "icegatheringstatechange",
+                            checkState,
+                        );
+                        clearTimeout(timeoutId);
+                    };
+                    pc.addEventListener("icegatheringstatechange", checkState);
+                    timeoutId = setTimeout(onTimeout, timeoutMs);
+                    // Checking the state again to avoid any eventual race condition
+                    checkState();
+                });
+            };
+
+            const createSmallWebRTCConnection = async (audioTrack) => {
+                const config = {
+                    iceServers: [],
+                };
+                const pc = new RTCPeerConnection(config);
+                addPeerConnectionEventListeners(pc);
+                pc.ontrack = (e) => (audioEl.srcObject = e.streams[0]);
+                // SmallWebRTCTransport expects to receive both transceivers
+                pc.addTransceiver(audioTrack, { direction: "sendrecv" });
+                pc.addTransceiver("video", { direction: "sendrecv" });
+                await pc.setLocalDescription(await pc.createOffer());
+                await waitForIceGatheringComplete(pc);
+                const offer = pc.localDescription;
+                const userId = userIdInput.value.trim();
+                const baseUrl = getWebRTCBaseUrl();
+                const response = await fetch(
+                    `${baseUrl}/api/v1/transport/${botId}/webrtc/offer`,
+                    {
+                        body: JSON.stringify({
+                            sdp: offer.sdp,
+                            type: offer.type,
+                            user_id: userId,
+                        }),
+                        headers: { "Content-Type": "application/json" },
+                        method: "POST",
+                    },
+                );
+                const answer = await response.json();
+                await pc.setRemoteDescription(answer);
+                return pc;
+            };
+
+            const connect = async () => {
+                if (!botId) {
+                    updateStatus("error", "Error: Bot ID not found in URL");
+                    updateConnectionStatus("Error");
+                    return;
+                }
+                const userId = userIdInput.value.trim();
+                if (!userId) {
+                    updateStatus("error", "Error: User ID is required");
+                    updateConnectionStatus("Error");
+                    return;
+                }
+                _onConnecting();
+                try {
+                    const audioStream =
+                        await navigator.mediaDevices.getUserMedia({
+                            audio: true,
+                        });
+                    peerConnection = await createSmallWebRTCConnection(
+                        audioStream.getAudioTracks()[0],
+                    );
+                } catch (error) {
+                    console.error("Error connecting:", error);
+                    updateStatus(
+                        "error",
+                        "Failed to connect: " + error.message,
+                    );
+                    updateConnectionStatus("Error");
+                    _onDisconnected();
+                }
+            };
+
+            const addPeerConnectionEventListeners = (pc) => {
+                pc.oniceconnectionstatechange = () => {
+                    console.log(
+                        "oniceconnectionstatechange",
+                        pc?.iceConnectionState,
+                    );
+                };
+                pc.onconnectionstatechange = () => {
+                    console.log("onconnectionstatechange", pc?.connectionState);
+                    let connectionState = pc?.connectionState;
+                    if (connectionState === "connected") {
+                        _onConnected();
+                    } else if (connectionState === "disconnected") {
+                        _onDisconnected();
+                    } else if (connectionState === "failed") {
+                        updateStatus("error", "Connection failed");
+                        updateConnectionStatus("Failed");
+                    }
+                };
+                pc.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        console.log("New ICE candidate:", event.candidate);
+                    } else {
+                        console.log("All ICE candidates have been sent.");
+                    }
+                };
+            };
+
+            const _onConnecting = () => {
+                updateStatus("loading", "Connecting...");
+                updateConnectionStatus("Connecting");
+                buttonEl.textContent = "Disconnect";
+                buttonEl.className = "btn btn-danger";
+                buttonEl.disabled = false;
+                connected = true;
+            };
+
+            const _onConnected = () => {
+                updateStatus(
+                    "ready",
+                    "Connected! You can now speak with the bot.",
+                );
+                updateConnectionStatus("Connected");
+                buttonEl.textContent = "Disconnect";
+                buttonEl.className = "btn btn-danger";
+                buttonEl.disabled = false;
+                connected = true;
+            };
+
+            const _onDisconnected = () => {
+                updateStatus("ready", "Disconnected. Ready to connect again.");
+                updateConnectionStatus("Disconnected");
+                buttonEl.textContent = "Connect";
+                buttonEl.className = "btn btn-primary";
+                connected = false;
+                updateButtonState();
+            };
+
+            const disconnect = () => {
+                if (!peerConnection) {
+                    return;
+                }
+                peerConnection.close();
+                peerConnection = null;
+                _onDisconnected();
+            };
+
+            buttonEl.addEventListener("click", async () => {
+                if (!connected) {
+                    await connect();
+                } else {
+                    disconnect();
+                }
+            });
+        </script>
+    </body>
+</html>

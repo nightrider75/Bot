@@ -1,0 +1,101 @@
+# Vector configuration for log shipping to Loki
+# This configuration collects logs from the bot orchestration application
+# and forwards them to Grafana Loki for centralized logging.
+#
+# The application outputs JSON logs to stdout, and Vector collects them
+# without requiring any application-level changes.
+
+[api]
+enabled = true
+
+[sources.docker_logs]
+type = "docker_logs"
+docker_host = "unix:///var/run/docker.sock" # Path to the Docker socket
+
+[transforms.log_transform]
+type = "remap"
+inputs = ["docker_logs"]
+drop_on_error = true
+source = '''
+# Only process logs from our application container
+if .container_name != "bot-app-1" {
+    abort
+}
+
+# Try to parse as JSON, if it fails, process as plain text
+parsed, parse_err = parse_json(.message)
+if parse_err == null {
+    # Successfully parsed JSON from our app
+    .message = parsed
+    
+    # Extract standard labels
+    .loki_labels.service = "bot"
+    .loki_labels.level = get(.message, ["record", "level", "name"]) ?? "unknown"
+    .loki_labels.pid = get(.message, ["record", "process", "id"]) ?? "unknown"
+    .loki_labels.thread = get(.message, ["record", "thread", "id"]) ?? "unknown"
+    .loki_labels.environment = "${ENVIRONMENT:-development}"
+    
+    # Extract bot-specific labels from the parsed JSON
+    # For now, we'll extract from the actual log structure or use defaults
+    .loki_labels.bot_id = get(.message, ["extra", "bot_id"]) ?? "bot"
+    .loki_labels.telephony_provider = get(.message, ["extra", "telephony_provider"]) ?? "unknown"
+    .loki_labels.pod_name = get(.message, ["extra", "pod_name"]) ?? "bot-pod-1"
+    .loki_labels.namespace = get(.message, ["extra", "namespace"]) ?? "bot-namespace"
+    
+    # Extract session/call identifiers for bloom filter optimization
+    .loki_labels.call_id = get(.message, ["extra", "call_id"]) ?? "unknown"
+    .loki_labels.session_id = get(.message, ["extra", "session_id"]) ?? "unknown"
+    .loki_labels.user_id = get(.message, ["extra", "user_id"]) ?? "unknown"
+    
+    # Convert the message back to readable text format for Grafana
+    .message, text_err = get(.message, ["text"]) ?? to_string(.message)
+} else {
+    # Not JSON, process as plain text but still extract labels
+    .loki_labels.service = "bot"
+    .loki_labels.level = "INFO"
+    .loki_labels.pid = "unknown"
+    .loki_labels.thread = "unknown"
+    .loki_labels.environment = "${ENVIRONMENT:-development}"
+    
+    # Set default bot-specific labels for plain text logs
+    .loki_labels.bot_id = "bot"
+    .loki_labels.telephony_provider = "unknown"
+    .loki_labels.pod_name = "bot-pod-1"
+    .loki_labels.namespace = "bot-namespace"
+    .loki_labels.call_id = "unknown"
+    .loki_labels.session_id = "unknown"
+    .loki_labels.user_id = "unknown"
+}
+
+# Ensure all labels have fallback values
+if .loki_labels.bot_id == null { .loki_labels.bot_id = "unknown" }
+if .loki_labels.telephony_provider == null { .loki_labels.telephony_provider = "unknown" }
+if .loki_labels.pod_name == null { .loki_labels.pod_name = "unknown" }
+if .loki_labels.namespace == null { .loki_labels.namespace = "unknown" }
+if .loki_labels.call_id == null { .loki_labels.call_id = "unknown" }
+if .loki_labels.session_id == null { .loki_labels.session_id = "unknown" }
+if .loki_labels.user_id == null { .loki_labels.user_id = "unknown" }
+'''
+
+[sinks.loki_sink]
+type = "loki"
+inputs = ["log_transform"]
+endpoint = "${LOKI_URL:-http://localhost:3100}"
+compression = "snappy"
+[sinks.loki_sink.encoding]
+codec = "text"
+[sinks.loki_sink.labels]
+logsource = "vector_bot"
+log_type = "{{ .loki_labels.service }}"
+level = "{{ .loki_labels.level }}"
+pid = "{{ .loki_labels.pid }}"
+threadid = "{{ .loki_labels.thread }}"
+environment = "{{ .loki_labels.environment }}"
+container_name = "{{ .container_name }}"
+bot_id = "{{ .loki_labels.bot_id }}"
+telephony_provider = "{{ .loki_labels.telephony_provider }}"
+pod_name = "{{ .loki_labels.pod_name }}"
+namespace = "{{ .loki_labels.namespace }}"
+call_id = "{{ .loki_labels.call_id }}"
+session_id = "{{ .loki_labels.session_id }}"
+user_id = "{{ .loki_labels.user_id }}"

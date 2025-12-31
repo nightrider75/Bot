@@ -1,0 +1,565 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Hub</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+
+        .header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .config-btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .config-btn:hover {
+            background-color: #1d4ed8;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .error-box {
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+            display: none;
+        }
+
+        .error-box.show {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+
+        .error-content h3 {
+            font-size: 14px;
+            font-weight: 500;
+            color: #991b1b;
+            margin-bottom: 4px;
+        }
+
+        .error-content p {
+            font-size: 14px;
+            color: #b91c1c;
+        }
+
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 48px;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .nodes-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .nodes-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .nodes-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .nodes-list {
+            display: none;
+        }
+
+        .nodes-list.show {
+            display: block;
+        }
+
+        .node-item {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .node-item:last-child {
+            border-bottom: none;
+        }
+
+        .node-item:hover {
+            background-color: #f9fafb;
+        }
+
+        .node-name {
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .node-arrow {
+            color: #2563eb;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .node-item:hover .node-arrow {
+            opacity: 1;
+        }
+
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: #6b7280;
+            display: none;
+        }
+
+        .empty-state.show {
+            display: block;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            color: #111827;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #6b7280;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+        }
+
+        .modal-close:hover {
+            color: #111827;
+        }
+
+        .form-group {
+            padding: 24px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .create-node-btn {
+            background-color: #10b981;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .create-node-btn:hover {
+            background-color: #059669;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1 id="botName">Loading...</h1>
+            <div style="display: flex; gap: 10px;">
+                <button class="create-node-btn" id="createNodeBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m8.66-15l-3 5.2M6.34 18.8l-3-5.2m15.32 5.2l-3-5.2M6.34 5.2l-3 5.2"></path>
+                    </svg>
+                    Create Node
+                </button>
+                <button class="config-btn" id="configBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M12 1v6m0 6v6m8.66-15l-3 5.2M6.34 18.8l-3-5.2m15.32 5.2l-3-5.2M6.34 5.2l-3 5.2"></path>
+                    </svg>
+                    Config
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Create Node Modal -->
+    <div class="modal" id="createNodeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Node</h2>
+                <button class="modal-close" id="closeModal">&times;</button>
+            </div>
+            <form id="createNodeForm">
+                <div class="form-group">
+                    <label for="nodeNameInput">Node ID</label>
+                    <input type="text" id="nodeNameInput" placeholder="Enter node name" required>
+                </div>
+                <div class="form-group">
+                    <label for="nodePromptInput">Node Prompt</label>
+                    <input type="text" id="nodePromptInput" placeholder="Enter node prompt" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="btn-primary">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="container">
+        <!-- Error Box -->
+        <div class="error-box" id="errorBox">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <div class="error-content">
+                <h3>Error</h3>
+                <p id="errorMessage"></p>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Nodes Card -->
+        <div class="nodes-card">
+            <div class="nodes-header">
+                <h2>Nodes (<span id="nodeCount">0</span>)</h2>
+            </div>
+            <div class="nodes-list" id="nodesList"></div>
+            <div class="empty-state" id="emptyState">No nodes found</div>
+        </div>
+    </div>
+
+    <script>
+        // Extract bot_id from URL path
+        function getBotIdFromUrl() {
+            const pathParts = window.location.pathname.split('/');
+            console.log('Path parts:', pathParts);
+            const botIndex = pathParts.indexOf('bot');
+            if (botIndex !== -1 && pathParts.length > botIndex + 1) {
+                return pathParts[botIndex + 1];
+            }
+            return null;
+        }
+
+        const botId = getBotIdFromUrl();
+        const apiBaseUrl = window.location.origin;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!botId) {
+                showError('Bot ID not found in URL');
+                return;
+            }
+            fetchBotData();
+
+            // Event listeners
+            document.getElementById('configBtn').addEventListener('click', handleConfigClick);
+        });
+
+        const createNodeBtn = document.getElementById('createNodeBtn');
+        const createNodeModal = document.getElementById('createNodeModal');
+        const closeModal = document.getElementById('closeModal');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const createNodeForm = document.getElementById('createNodeForm');
+
+        // Open modal
+        createNodeBtn.addEventListener('click', () => {
+            createNodeModal.classList.add('active');
+            document.getElementById('nodeNameInput').focus();
+        });
+
+        // Close modal
+        const closeModalFunc = () => {
+            createNodeModal.classList.remove('active');
+            createNodeForm.reset();
+        };
+
+        closeModal.addEventListener('click', closeModalFunc);
+        cancelBtn.addEventListener('click', closeModalFunc);
+
+        // Close on outside click
+        createNodeModal.addEventListener('click', (e) => {
+            if (e.target === createNodeModal) {
+                closeModalFunc();
+            }
+        });
+
+        // Handle form submission
+        createNodeForm.addEventListener('submit', (e) => {
+            console.log('Form submitted');
+            e.preventDefault();
+            const nodePrompt = document.getElementById('nodePromptInput').value;
+            console.log('Creating node:', nodePrompt);
+            const nodeName = document.getElementById('nodeNameInput').value;
+
+            // Your node creation logic here
+            console.log('Creating node:', nodeName);
+
+            // Fetch nodes
+            const nodesResponse = fetch(`/api/v1/bot_hub/${botId}/nodes/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    node_name: nodeName,
+                    prompt: nodePrompt
+                })
+            }).then(nodesResponse => {
+                if (!nodesResponse.ok) throw new Error('Failed to create node');
+                return nodesResponse.json();
+            }).then(nodesData => {
+                console.log('Created node:', nodesData);
+                // Close modal after creation
+                closeModalFunc();
+            });
+        });
+        async function fetchBotData() {
+            const loading = document.getElementById('loading');
+            const errorBox = document.getElementById('errorBox');
+            const nodesList = document.getElementById('nodesList');
+            const emptyState = document.getElementById('emptyState');
+
+            // Show loading
+            loading.classList.add('show');
+            errorBox.classList.remove('show');
+            nodesList.classList.remove('show');
+            emptyState.classList.remove('show');
+
+            try {
+                // Fetch bot details
+                const botResponse = await fetch(`${apiBaseUrl}/api/v1/bot_hub/${botId}`);
+                if (!botResponse.ok) throw new Error('Failed to fetch bot details');
+                const botData = await botResponse.json();
+                document.getElementById('botName').textContent = botData.name;
+
+                // Fetch nodes
+                const nodesResponse = await fetch(`${apiBaseUrl}/api/v1/bot_hub/${botId}/nodes`);
+                if (!nodesResponse.ok) throw new Error('Failed to fetch nodes');
+                const nodesData = await nodesResponse.json();
+
+                // Display nodes
+                displayNodes(nodesData.nodes);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        function displayNodes(nodes) {
+            const nodesList = document.getElementById('nodesList');
+            const emptyState = document.getElementById('emptyState');
+            const nodeCount = document.getElementById('nodeCount');
+
+            nodeCount.textContent = nodes.length;
+
+            if (nodes.length === 0) {
+                emptyState.classList.add('show');
+                return;
+            }
+
+            nodesList.innerHTML = '';
+            nodes.forEach(node => {
+                const nodeItem = document.createElement('div');
+                nodeItem.className = 'node-item';
+                nodeItem.innerHTML = `
+                    <span class="node-name">${node.node_name}</span>
+                    <span class="node-arrow">→</span>
+                `;
+                nodeItem.addEventListener('click', () => handleNodeClick(node.node_id));
+                nodesList.appendChild(nodeItem);
+            });
+
+            nodesList.classList.add('show');
+        }
+
+        function handleNodeClick(nodeId) {
+            const url = `${apiBaseUrl}/bot/${botId}/nodes/${nodeId}`;
+            window.open(url, '_blank');
+        }
+
+        function handleConfigClick() {
+            const url = `${apiBaseUrl}/bot/${botId}/config`;
+            window.open(url, '_blank');
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorBox.classList.add('show');
+        }
+    </script>
+</body>
+</html>

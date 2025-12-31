@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.X.X/dist/protobuf.min.js"></script>
+    <title>WebSocket Bot Testing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+
+        .header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .back-btn {
+            background-color: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background-color: #4b5563;
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .test-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .test-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f8fafc;
+        }
+
+        .test-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .test-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .test-content {
+            padding: 24px;
+        }
+
+        .status-section {
+            margin-bottom: 24px;
+        }
+
+        .status-box {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status-box.loading {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fbbf24;
+        }
+
+        .status-box.ready {
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #10b981;
+        }
+
+        .status-box.error {
+            background-color: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #f87171;
+        }
+
+        .status-box.show {
+            display: block;
+        }
+
+        .config-section {
+            background-color: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .config-section h3 {
+            margin: 0 0 12px 0;
+            font-size: 16px;
+            color: #374151;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .form-group small {
+            color: #6b7280;
+            font-size: 12px;
+            margin-top: 4px;
+            display: block;
+        }
+
+        .controls-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #1d4ed8;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            background: #b91c1c;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .info-section {
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .info-section h3 {
+            margin: 0 0 8px 0;
+            color: #0c4a6e;
+            font-size: 14px;
+        }
+
+        .info-section p {
+            margin: 4px 0;
+            color: #0369a1;
+            font-size: 12px;
+        }
+
+        .bot-info {
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .bot-info h3 {
+            margin: 0 0 8px 0;
+            color: #166534;
+            font-size: 14px;
+        }
+
+        .bot-info p {
+            margin: 4px 0;
+            color: #15803d;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>WebSocket Bot Testing</h1>
+            <button class="back-btn" id="backBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="m12 19-7-7 7-7"></path>
+                    <path d="M19 12H5"></path>
+                </svg>
+                Back to Platform
+            </button>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="container">
+        <!-- Bot Info Card -->
+        <div class="test-card">
+            <div class="test-header">
+                <h2>Bot Information</h2>
+                <p>Testing bot with WebSocket transport</p>
+            </div>
+            <div class="test-content">
+                <div class="bot-info">
+                    <h3>Selected Bot</h3>
+                    <p><strong>Bot ID:</strong> <span id="botId">Loading...</span></p>
+                    <p><strong>Bot Name:</strong> <span id="botName">Loading...</span></p>
+                    <p><strong>Transport:</strong> WebSocket + Protobuf</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- WebSocket Testing Card -->
+        <div class="test-card">
+            <div class="test-header">
+                <h2>WebSocket Audio Testing</h2>
+                <p>Test your bot with real-time audio using WebSocket transport</p>
+            </div>
+            <div class="test-content">
+                <div class="status-section">
+                    <div id="statusBox" class="status-box loading">
+                        <div id="statusText">Loading protobuf definitions...</div>
+                    </div>
+                </div>
+
+                <div class="config-section">
+                    <h3>Connection Configuration</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="websocketUrl">WebSocket URL</label>
+                            <input type="text" id="websocketUrl">
+                            <small>Enter or edit the WebSocket URL for the bot connection.</small>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="selectedUserId">User ID</label>
+                            <input type="text" id="selectedUserId" name="userid" autocomplete="on">
+                            <small>Enter the user ID to use for this connection.</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="controls-section">
+                    <button id="connectBtn" class="btn btn-primary">Connect</button>
+                    <button id="disconnectBtn" class="btn btn-danger" disabled>Disconnect</button>
+                </div>
+
+                <div class="info-section">
+                    <h3>Connection Information</h3>
+                    <p><strong>Status:</strong> <span id="connectionStatus">Disconnected</span></p>
+                    <p><strong>Transport:</strong> WebSocket + Protobuf</p>
+                    <p><strong>Sample Rate:</strong> 24000 Hz</p>
+                    <p><strong>Channels:</strong> 1 (Mono)</p>
+                    <p><strong>Format:</strong> 16-bit PCM</p>
+                    <p><strong>Usage:</strong> Real-time audio testing without Twilio/Plivo</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SAMPLE_RATE = 24000;
+        const NUM_CHANNELS = 1;
+        const PLAY_TIME_RESET_THRESHOLD_MS = 1.0;
+
+        // Global variables
+        let Frame = null;
+        let ws = null;
+        let audioContext = null;
+        let source = null;
+        let microphoneStream = null;
+        let scriptProcessor = null;
+        let playTime = 0;
+        let lastMessageTime = 0;
+        let isPlaying = false;
+
+        // Helper function to get WebSocket base URL from current browser location
+        function getWebSocketBaseUrl() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            return `${protocol}//${host}`;
+        }
+
+        // DOM elements
+        let connectBtn, disconnectBtn, statusBox, statusText, connectionStatus;
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeElements();
+            setupEventListeners();
+            initializeWebSocketTesting();
+        });
+
+        function initializeElements() {
+            connectBtn = document.getElementById('connectBtn');
+            disconnectBtn = document.getElementById('disconnectBtn');
+            statusBox = document.getElementById('statusBox');
+            statusText = document.getElementById('statusText');
+            connectionStatus = document.getElementById('connectionStatus');
+        }
+
+        function loadBotInfo() {
+            // Get bot info from URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const botId = urlParams.get('bot_id');
+            const botName = urlParams.get('bot_name') || 'Unknown Bot';
+            
+            if (botId) {
+                document.getElementById('botId').textContent = botId;
+                document.getElementById('botName').textContent = botName;
+                // Pre-fill WebSocket URL (but allow editing)
+                const baseUrl = getWebSocketBaseUrl();
+                document.getElementById('websocketUrl').value = `${baseUrl}/api/v1/transport/${botId}/voicing/ws`;
+                
+                // Pre-fill user ID (but allow editing)
+                selectUserForBot(botId);
+            } else {
+                // Redirect back to platform if no bot ID
+                window.location.href = '/';
+            }
+        }
+
+        function setupEventListeners() {
+            // Back button
+            document.getElementById('backBtn').addEventListener('click', () => {
+                window.location.href = '/';
+            });
+
+            // WebSocket connection controls
+            connectBtn.addEventListener('click', connectWebSocket);
+            disconnectBtn.addEventListener('click', disconnectWebSocket);
+        }
+
+        function initializeWebSocketTesting() {
+            // Check browser compatibility
+            checkBrowserCompatibility();
+            
+            // Load protobuf definitions
+            const proto = protobuf.load('/static/protobuf_definitions/frames.proto', (err, root) => {
+                if (err) {
+                    console.error('Error loading protobuf:', err);
+                    updateStatus('error', 'Failed to load protobuf definitions. Please check if frames.proto is available.');
+                    return;
+                }
+                
+                Frame = root.lookupType('bot_engine.Frame');
+                
+                // Now that protobuf is loaded, load bot info
+                loadBotInfo();
+                
+                updateStatus('ready', 'Ready! Configure the connection settings and click "Connect" to begin.');
+                connectBtn.disabled = false;
+            });
+        }
+
+        function updateStatus(type, message) {
+            statusBox.className = `status-box ${type} show`;
+            statusText.textContent = message;
+        }
+
+        function updateConnectionStatus(status) {
+            connectionStatus.textContent = status;
+        }
+
+        function checkBrowserCompatibility() {
+            const issues = [];
+            
+            // Check if we're on HTTPS or localhost (most common issue)
+            const isSecure = location.protocol === 'https:' || 
+                           location.hostname === 'localhost' || 
+                           location.hostname === '127.0.0.1';
+            
+            if (!isSecure) {
+                issues.push('⚠️ Not using HTTPS or localhost. getUserMedia requires secure context.');
+            }
+            
+            // Only show critical issues, not warnings
+            if (issues.length > 0) {
+                console.warn('Browser compatibility issues detected:');
+                issues.forEach(issue => console.warn(issue));
+                
+                // Only show error for critical issues, not warnings
+                updateStatus('error', `Security Issue: ${issues.join(', ')}`);
+            }
+        }
+
+        function startAudio() {
+            // Simple check like in old code - more reliable
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                updateStatus('error', 'getUserMedia is not supported in your browser. Please use a modern browser with HTTPS or localhost.');
+                return;
+            }
+
+            // Check if WebSocket is connected
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                updateStatus('error', 'WebSocket not connected. Please wait for connection to establish.');
+                return;
+            }
+
+            audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                latencyHint: 'interactive',
+                sampleRate: SAMPLE_RATE
+            });
+
+            // Resume audio context if it's suspended (required in some browsers)
+            if (audioContext.state === 'suspended') {
+                audioContext.resume().then(() => {
+                    console.log('Audio context resumed');
+                });
+            }
+
+            isPlaying = true;
+            updateStatus('loading', 'Starting audio capture...');
+
+            // Start audio capture
+            startAudioCapture();
+        }
+
+        async function selectUserForBot(botId) {
+            // Leave user ID empty by default - user can enter their own
+            document.getElementById('selectedUserId').value = '';
+        }
+
+        function connectWebSocket() {
+            const websocketUrl = document.getElementById('websocketUrl').value.trim();
+            const userId = document.getElementById('selectedUserId').value.trim();
+            
+            if (!websocketUrl) {
+                alert('Please enter a WebSocket URL');
+                return;
+            }
+            
+            // Build WebSocket URL with parameters
+            const urlParams = new URLSearchParams();
+            urlParams.set('user_id', userId);
+            
+            // Add any additional parameters from URL if needed
+            const currentUrlParams = new URLSearchParams(window.location.search);
+            const agentEnabled = currentUrlParams.get('agent_enabled');
+            if (agentEnabled) {
+                urlParams.set('agent_enabled', agentEnabled);
+            }
+            
+            // Construct the full WebSocket URL with query parameters
+            const separator = websocketUrl.includes('?') ? '&' : '?';
+            const fullUrl = `${websocketUrl}${separator}${urlParams.toString()}`;
+            console.log('Connecting to WebSocket:', fullUrl);
+            console.log('User ID being sent:', userId);
+            
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            updateStatus('loading', 'Connecting to WebSocket...');
+            updateConnectionStatus('Connecting');
+            
+            ws = new WebSocket(fullUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.addEventListener('open', handleWebSocketOpen);
+            ws.addEventListener('message', handleWebSocketMessage);
+            ws.addEventListener('close', (event) => {
+                console.log('WebSocket connection closed.', event.code, event.reason);
+                updateConnectionStatus('Disconnected');
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+                if (event.code !== 1000) { // Not a normal closure
+                    updateStatus('error', `WebSocket closed unexpectedly: ${event.reason || 'Unknown reason'}`);
+                } else {
+                    updateStatus('ready', 'Disconnected. Ready to connect again.');
+                }
+                // Stop audio if it's playing, but don't close WebSocket (it's already closed)
+                if (isPlaying) {
+                    stopAudio(false);
+                }
+            });
+            ws.addEventListener('error', (event) => {
+                console.error('WebSocket error:', event);
+                updateConnectionStatus('Error');
+                updateStatus('error', 'WebSocket connection failed. Check if the server is running and the URL is correct.');
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            });
+        }
+
+        function disconnectWebSocket() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.close(1000, 'User disconnected');
+            }
+            // If audio is playing, stop it
+            if (isPlaying) {
+                stopAudio(false);
+            }
+        }
+
+        function handleWebSocketOpen(event) {
+            console.log('WebSocket connection established.', event);
+            updateConnectionStatus('Connected');
+            updateStatus('loading', 'Connected! Starting audio capture...');
+            
+            // Automatically start audio when WebSocket connects
+            startAudio();
+        }
+
+        function startAudioCapture() {
+            navigator.mediaDevices.getUserMedia({
+                audio: {
+                    sampleRate: SAMPLE_RATE,
+                    channelCount: NUM_CHANNELS,
+                    autoGainControl: true,
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                }
+            }).then((stream) => {
+                console.log('Microphone access granted, setting up audio processing...');
+                microphoneStream = stream;
+                
+                // Create script processor with smaller buffer size for better real-time audio
+                // Use a larger buffer size for better audio quality
+                scriptProcessor = audioContext.createScriptProcessor(2048, 1, 1);
+                source = audioContext.createMediaStreamSource(stream);
+                source.connect(scriptProcessor);
+                scriptProcessor.connect(audioContext.destination);
+
+                scriptProcessor.onaudioprocess = (event) => {
+                    if (!ws || ws.readyState !== WebSocket.OPEN || !isPlaying) {
+                        return;
+                    }
+
+                    try {
+                        const audioData = event.inputBuffer.getChannelData(0);
+                        
+                        // Calculate RMS volume for debugging
+                        let rms = 0;
+                        for (let i = 0; i < audioData.length; i++) {
+                            rms += audioData[i] * audioData[i];
+                        }
+                        rms = Math.sqrt(rms / audioData.length);
+                        
+                        // Debug: Always log audio levels (but only send if above threshold)
+                        if (rms > 0.001) { // Log even very quiet audio
+                            console.log(`Audio RMS: ${rms.toFixed(4)}, samples: ${audioData.length}`);
+                        }
+                        
+                        // Only send audio if there's significant volume (avoid sending silence)
+                        // Lower threshold for better sensitivity
+                        if (rms > 0.005) {
+                            
+                            const pcmS16Array = convertFloat32ToS16PCM(audioData);
+                            const pcmByteArray = new Uint8Array(pcmS16Array.buffer);
+                            
+                            // Try to use protobuf format first, fall back to binary
+                            if (Frame) {
+                                try {
+                                    // Create AudioRawFrame using the new protobuf structure
+                                    const audioFrame = {
+                                        audio: {
+                                            id: Date.now(), // Simple timestamp-based ID
+                                            name: "audio_input",
+                                            audio: pcmByteArray,
+                                            sample_rate: SAMPLE_RATE,
+                                            num_channels: NUM_CHANNELS
+                                        }
+                                    };
+                                    
+                                    const frame = Frame.create(audioFrame);
+                                    const encodedFrame = Frame.encode(frame).finish();
+                                    ws.send(encodedFrame);
+                                    console.log(`Sent protobuf audio frame: ${pcmByteArray.length} bytes`);
+                                } catch (protobufError) {
+                                    console.log("Protobuf encoding failed, using binary format:", protobufError);
+                                    // Fall back to binary format
+                                    const header = new ArrayBuffer(8);
+                                    const view = new DataView(header);
+                                    view.setUint32(0, SAMPLE_RATE, true); // little-endian
+                                    view.setUint32(4, NUM_CHANNELS, true); // little-endian
+                                    
+                                    const binaryData = new Uint8Array(header.byteLength + pcmByteArray.length);
+                                    binaryData.set(new Uint8Array(header), 0);
+                                    binaryData.set(pcmByteArray, header.byteLength);
+                                    
+                                    ws.send(binaryData);
+                                }
+                            } else {
+                                // Use binary format if protobuf is not available
+                                const header = new ArrayBuffer(8);
+                                const view = new DataView(header);
+                                view.setUint32(0, SAMPLE_RATE, true); // little-endian
+                                view.setUint32(4, NUM_CHANNELS, true); // little-endian
+                                
+                                const binaryData = new Uint8Array(header.byteLength + pcmByteArray.length);
+                                binaryData.set(new Uint8Array(header), 0);
+                                binaryData.set(pcmByteArray, header.byteLength);
+                                
+                                ws.send(binaryData);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error processing audio frame:', error);
+                    }
+                };
+                
+                updateStatus('ready', 'Audio capture started! Speak into your microphone.');
+            }).catch((error) => {
+                console.error('Error accessing microphone:', error);
+                updateStatus('error', 'Failed to access microphone: ' + error.message);
+                isPlaying = false;
+            });
+        }
+
+        function handleWebSocketMessage(event) {
+            const arrayBuffer = event.data;
+            if (isPlaying && ws && ws.readyState === WebSocket.OPEN) {
+                enqueueAudioFromProto(arrayBuffer);
+            }
+        }
+
+        function enqueueAudioFromProto(arrayBuffer) {
+            try {
+                // Try to parse as protobuf first
+                let parsedFrame = null;
+                let audioData = null;
+                let sampleRate = SAMPLE_RATE;
+                let numChannels = NUM_CHANNELS;
+                
+                if (Frame) {
+                    try {
+                        parsedFrame = Frame.decode(new Uint8Array(arrayBuffer));
+                        console.log("Received protobuf frame:", parsedFrame);
+                        
+                        // Check if this is an audio frame (using the new oneof structure)
+                        if (parsedFrame?.audio && parsedFrame.audio.audio && parsedFrame.audio.audio.length > 0) {
+                            audioData = new Uint8Array(parsedFrame.audio.audio);
+                            sampleRate = parsedFrame.audio.sample_rate || SAMPLE_RATE;
+                            numChannels = parsedFrame.audio.num_channels || NUM_CHANNELS;
+                        } else {
+                            console.log("No audio data in protobuf frame");
+                            return false;
+                        }
+                    } catch (protobufError) {
+                        console.log("Protobuf parsing failed, trying binary format:", protobufError);
+                        // Fall through to binary format
+                    }
+                }
+                
+                // If protobuf parsing failed or Frame is not available, try binary format
+                if (!audioData) {
+                    const dataView = new DataView(arrayBuffer);
+                    if (arrayBuffer.byteLength < 8) {
+                        console.log("Invalid frame data - too short");
+                        return false;
+                    }
+                    
+                    // Binary format: [4 bytes sample_rate][4 bytes num_channels][audio_data]
+                    sampleRate = dataView.getUint32(0, true); // little-endian
+                    numChannels = dataView.getUint32(4, true); // little-endian
+                    audioData = new Uint8Array(arrayBuffer, 8);
+                    
+                    console.log(`Parsed binary frame: ${audioData.length} bytes, sample rate: ${sampleRate}, channels: ${numChannels}`);
+                }
+
+                // Reset play time if it's been a while we haven't played anything.
+                const diffTime = audioContext.currentTime - lastMessageTime;
+                if ((playTime == 0) || (diffTime > PLAY_TIME_RESET_THRESHOLD_MS)) {
+                    playTime = audioContext.currentTime;
+                }
+                lastMessageTime = audioContext.currentTime;
+
+                console.log(`Playing audio: ${audioData.length} bytes, sample rate: ${sampleRate}, channels: ${numChannels}`);
+                
+                // Only play if we have enough audio data
+                if (audioData.length > 0) {
+                    // Check for potential audio quality issues
+                    const pcm16 = new Int16Array(audioData.buffer);
+                    let maxAmplitude = 0;
+                    for (let i = 0; i < pcm16.length; i++) {
+                        maxAmplitude = Math.max(maxAmplitude, Math.abs(pcm16[i]));
+                    }
+                    
+                    if (maxAmplitude > 30000) {
+                        console.warn('High amplitude detected, may cause distortion');
+                    }
+                    
+                    // Play the raw PCM by creating a buffer directly
+                    playRawPCM(audioData, sampleRate, numChannels);
+                }
+            } catch (error) {
+                console.error('Error processing received frame:', error);
+            }
+        }
+
+        function playRawPCM(pcmBytes, sampleRate, numChannels) {
+            try {
+                // Ensure audio context is running
+                if (audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+                
+                // Convert Uint8Array of 16-bit PCM into Float32 samples
+                const pcm16 = new Int16Array(pcmBytes.buffer);
+                const float32 = new Float32Array(pcm16.length);
+                
+                // Apply smoothing and de-clicking to reduce artifacts
+                for (let i = 0; i < pcm16.length; i++) {
+                    // Convert 16-bit PCM range [-32768, 32767] to float range [-1, 1]
+                    // Use 32768 for proper symmetric conversion
+                    let sample = pcm16[i] / 32768;
+                    
+                    // Apply gentle smoothing to reduce artifacts
+                    if (i > 0) {
+                        sample = (sample + float32[i-1] * 0.1) / 1.1;
+                    }
+                    
+                    // Apply de-clicking to reduce sudden amplitude changes
+                    if (i > 0 && Math.abs(sample - float32[i-1]) > 0.1) {
+                        sample = float32[i-1] + (sample - float32[i-1]) * 0.5;
+                    }
+                    
+                    float32[i] = sample;
+                }
+
+                // Create an AudioBuffer with the correct number of channels & length
+                const frameCount = float32.length / numChannels;
+                const audioBuffer = audioContext.createBuffer(numChannels, frameCount, sampleRate);
+
+                // Copy the float data into each channel of the AudioBuffer
+                for (let channel = 0; channel < numChannels; channel++) {
+                    const channelData = audioBuffer.getChannelData(channel);
+                    // Extract interleaved samples for this channel
+                    for (let i = 0; i < frameCount; i++) {
+                        channelData[i] = float32[i * numChannels + channel];
+                    }
+                }
+
+                // Create a source node, set its buffer, and schedule playback
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                
+                // Add a gain node to control volume and reduce crackling
+                const gainNode = audioContext.createGain();
+                gainNode.gain.value = 0.6; // Reduced volume to prevent clipping and artifacts
+                
+                // Add a low-pass filter to reduce high-frequency artifacts
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 8000; // Cut off frequencies above 8kHz
+                filter.Q.value = 0.5; // Gentle rolloff
+                
+                source.connect(gainNode);
+                gainNode.connect(filter);
+                filter.connect(audioContext.destination);
+                
+                // If you're using `playTime`, schedule the start in the future:
+                source.start(playTime);
+                // Update your scheduling offset so subsequent frames chain smoothly
+                playTime += audioBuffer.duration;
+                
+            } catch (error) {
+                console.error('Error playing audio:', error);
+            }
+        }
+
+        function convertFloat32ToS16PCM(float32Array) {
+            let int16Array = new Int16Array(float32Array.length);
+
+            for (let i = 0; i < float32Array.length; i++) {
+                // Clamp to [-1, 1] range
+                let clampedValue = Math.max(-1, Math.min(1, float32Array[i]));
+                
+                // Apply gentle smoothing to reduce artifacts
+                if (i > 0) {
+                    clampedValue = (clampedValue + int16Array[i-1] / 32767 * 0.1) / 1.1;
+                }
+                
+                // Convert to 16-bit PCM: multiply by 32767 and round
+                int16Array[i] = Math.round(clampedValue * 32767);
+            }
+            return int16Array;
+        }
+
+        function stopAudio(closeWebsocket = false) {
+            playTime = 0;
+            isPlaying = false;
+
+            if (ws && closeWebsocket) {
+                ws.close();
+                ws = null;
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+
+            if (scriptProcessor) {
+                scriptProcessor.disconnect();
+                scriptProcessor = null;
+            }
+            if (source) {
+                source.disconnect();
+                source = null;
+            }
+            
+            if (microphoneStream) {
+                microphoneStream.getTracks().forEach(track => track.stop());
+                microphoneStream = null;
+            }
+            
+            if (!closeWebsocket && ws && ws.readyState === WebSocket.OPEN) {
+                updateStatus('ready', 'Audio stopped. WebSocket still connected. Click "Start Audio" to resume.');
+            }
+        }
+    </script>
+</body>
+</html>

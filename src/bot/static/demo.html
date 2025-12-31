@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dual Neural Interface</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Color Schemes */
+            --theme-eng: #00f2ea;  /* Cyan for English */
+            --theme-multi: #ff0055; /* Pink for Multilingual */
+            
+            --glass-bg: rgba(20, 20, 35, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-muted: #a1a1aa;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #050511;
+            /* Dual gradient background to represent the two sides */
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 234, 0.1), transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(255, 0, 85, 0.1), transparent 40%);
+            min-height: 100vh;
+            color: var(--text-main);
+            overflow-x: hidden;
+            padding-bottom: 40px;
+        }
+
+        /* Scanline effect */
+        body::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .main-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Header & Global Persona --- */
+        .header {
+            text-align: center;
+            margin: 30px 0 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, var(--theme-eng), #fff, var(--theme-multi));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Persona Tabs (Global) */
+        .persona-selector {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 50px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .category-tab {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.9rem;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .category-tab.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        /* --- The Split Layout --- */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            width: 100%;
+            align-items: start;
+        }
+
+        @media (max-width: 900px) {
+            .modules-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* --- Module Cards --- */
+        .module-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Specific Theme Colors */
+        .module-eng { border-top: 2px solid var(--theme-eng); }
+        .module-multi { border-top: 2px solid var(--theme-multi); }
+
+        .module-card:hover {
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: translateY(-5px);
+        }
+
+        .module-title {
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .module-eng .module-title { color: var(--theme-eng); text-shadow: 0 0 15px rgba(0, 242, 234, 0.4); }
+        .module-multi .module-title { color: var(--theme-multi); text-shadow: 0 0 15px rgba(255, 0, 85, 0.4); }
+
+        /* --- Selection Buttons --- */
+        .selection-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 100%;
+            margin-bottom: 40px;
+        }
+
+        .select-btn {
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        .select-btn:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+        }
+
+        /* Active States */
+        .module-eng .select-btn.active {
+            background: rgba(0, 242, 234, 0.15);
+            border-color: var(--theme-eng);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 242, 234, 0.2);
+        }
+
+        .module-multi .select-btn.active {
+            background: rgba(255, 0, 85, 0.15);
+            border-color: var(--theme-multi);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.2);
+        }
+
+        /* --- The Orb (Duplicate for each) --- */
+        .orb-wrapper {
+            position: relative;
+            width: 140px;
+            height: 140px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .orb-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            background: #151520;
+            box-shadow: inset 0 5px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* Theme specific Orb borders */
+        .module-eng .orb-btn { border: 2px solid rgba(0, 242, 234, 0.3); }
+        .module-multi .orb-btn { border: 2px solid rgba(255, 0, 85, 0.3); }
+
+        .orb-btn:hover { transform: scale(1.05); }
+
+        /* Orb Connecting State */
+        .orb-btn.connecting::after {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: #fff;
+            animation: spin 1s linear infinite;
+        }
+
+        /* Orb Active State */
+        .module-eng .orb-btn.active {
+            background: var(--theme-eng);
+            box-shadow: 0 0 40px var(--theme-eng);
+            border-color: transparent;
+        }
+        .module-multi .orb-btn.active {
+            background: var(--theme-multi);
+            box-shadow: 0 0 40px var(--theme-multi);
+            border-color: transparent;
+        }
+
+        /* Audio Bars inside Orb */
+        .bar-container {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            height: 40px;
+        }
+        .bar {
+            width: 4px;
+            height: 10px;
+            background: #fff;
+            border-radius: 2px;
+            animation: quiet 1s infinite alternate;
+        }
+        .orb-btn.active .bar {
+            animation: loud 0.4s infinite alternate;
+        }
+        .orb-btn.active .bar:nth-child(1) { animation-delay: 0.1s; }
+        .orb-btn.active .bar:nth-child(2) { animation-delay: 0.2s; }
+        .orb-btn.active .bar:nth-child(3) { animation-delay: 0.3s; }
+
+        @keyframes quiet { 0% { height: 5px; opacity: 0.5; } 100% { height: 15px; opacity: 0.8; } }
+        @keyframes loud { 0% { height: 10px; } 100% { height: 35px; } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* --- Text --- */
+        .status-text {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #fff;
+        }
+        .detail-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .live-badge {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            padding: 4px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .live-badge.visible { opacity: 1; }
+        .live-badge.error { color: #ff6b6b; background: rgba(255, 107, 107, 0.1); }
+        
+    </style>
+</head>
+<body>
+
+    <div class="main-wrapper">
+        <div class="header">
+            <h1>AI Neural Interface</h1>
+            <div style="color: var(--text-muted);">Select Persona & Voice Module</div>
+        </div>
+
+        <!-- 1. Global Persona Selector -->
+        <div class="persona-selector">
+            <button class="category-tab active" data-bot="4572cdf4-a104-4a59-a93e-3594e567c4bb" data-name="Hotel Concierge">Hospitality</button>
+            <button class="category-tab" data-bot="fc8bc2f3-cf22-4341-9d3c-773fd8637f03" data-name="Sales Rep">Sales</button>
+            <button class="category-tab" data-bot="3bf62ab4-ace3-42e8-8318-ccb712f91554" data-name="Outbound Caller">Outbound</button>
+            <button class="category-tab" data-bot="a7590a4c-6277-48ec-b36d-f7c6cd48707d" data-name="Companion">Companion</button>
+            <button class="category-tab" data-bot="7b6da7fa-de62-4aaa-8d8b-a10d8c09b18f" data-name="Support Agent">Support</button>
+        </div>
+
+        <div class="modules-grid">
+            
+            <!-- 2. LEFT BOX: Global English Accents -->
+            <div class="module-card module-eng">
+                <div class="module-title">
+                    <span style="font-size:1.5rem">🌍</span> Global English
+                </div>
+
+                <div class="selection-grid">
+                    <button class="select-btn accent-opt active" data-voice="yM93hbw8Qtvdma2wCnJG" data-label="US Accent">
+                        🇺🇸 US 
+                    </button>
+                    <button class="select-btn accent-opt" data-voice="kIYbb5iUo0dJb8oRw5Mt" data-label="UK Accent">
+                        🇬🇧 UK 
+                    </button>
+                    <button class="select-btn accent-opt" data-voice="2zRM7PkgwBPiau2jvVXc" data-label="Indian Accent">
+                        🇮🇳 Indian 
+                    </button>
+                    <button class="select-btn accent-opt" data-voice="aCChyB4P5WEomwRsOKRh" data-label="UAE Accent">
+                        🇦🇪 UAE 
+                    </button>
+                </div>
+
+                <div class="orb-wrapper">
+                    <button class="orb-btn" id="btn-eng" onclick="toggleConnection('english')">
+                        <div class="bar-container">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="status-text" id="status-eng">Tap to Start</div>
+                <div class="detail-text" id="detail-eng">US Accent Selected</div>
+                <div class="live-badge" id="badge-eng">● Live Connection</div>
+            </div>
+
+            <!-- 3. RIGHT BOX: Multilingual Voices -->
+            <div class="module-card module-multi">
+                <div class="module-title">
+                    <span style="font-size:1.5rem">🗣️</span> Multilingual
+                </div>
+
+                <div class="selection-grid">
+                    <button class="select-btn multi-opt active" data-voice="kiaJRdXJzloFWi6AtFBf" data-lang="hi" data-label="Hindi">
+                        🇮🇳 Hindi
+                    </button>
+                    <button class="select-btn multi-opt" data-voice="Jvf6TAXwMUVTSR20U0f9" data-lang="de" data-label="German">
+                        🇩🇪 German
+                    </button>
+                    <button class="select-btn multi-opt" data-voice="93nuHbke4dTER9x2pDwE" data-lang="fr" data-label="French">
+                        🇫🇷 French
+                    </button>
+                    <button class="select-btn multi-opt" data-voice="94zOad0g7T7K4oa7zhDq" data-lang="es" data-label="Spanish">
+                        🇪🇸 Spanish
+                    </button>
+                </div>
+
+                <div class="orb-wrapper">
+                    <button class="orb-btn" id="btn-multi" onclick="toggleConnection('multi')">
+                        <div class="bar-container">
+                            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="status-text" id="status-multi">Tap to Start</div>
+                <div class="detail-text" id="detail-multi">Hindi Voice Selected</div>
+                <div class="live-badge" id="badge-multi">● Live Connection</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE = window.location.origin;
+        
+        // --- State Management ---
+        let currentBotId = '4572cdf4-a104-4a59-a93e-3594e567c4bb'; // Default Bot
+        
+        // English Settings
+        let engVoiceId = 'yM93hbw8Qtvdma2wCnJG';
+        let engLabel = 'US Accent';
+        
+        // Multilingual Settings
+        let multiVoiceId = 'kiaJRdXJzloFWi6AtFBf';
+        let multiLang = 'hi';
+        let multiLabel = 'Hindi';
+
+        // WebRTC State
+        let peerConnection = null;
+        let activeSession = null; // 'english' or 'multi' or null
+
+        // --- DOM Elements ---
+        // English
+        const btnEng = document.getElementById('btn-eng');
+        const statusEng = document.getElementById('status-eng');
+        const detailEng = document.getElementById('detail-eng');
+        const badgeEng = document.getElementById('badge-eng');
+        
+        // Multi
+        const btnMulti = document.getElementById('btn-multi');
+        const statusMulti = document.getElementById('status-multi');
+        const detailMulti = document.getElementById('detail-multi');
+        const badgeMulti = document.getElementById('badge-multi');
+
+        // --- Event Listeners: Persona ---
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentBotId = tab.dataset.bot;
+                
+                // If live, we might want to warn or disconnect, but for now we just update for next call
+                if(activeSession) disconnect();
+            });
+        });
+
+        // --- Event Listeners: English Options ---
+        document.querySelectorAll('.accent-opt').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.accent-opt').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                engVoiceId = btn.dataset.voice;
+                engLabel = btn.dataset.label;
+                detailEng.textContent = `${engLabel} Selected`;
+                
+                if(activeSession === 'english') disconnect(); // Reset if changing settings while live
+            });
+        });
+
+        // --- Event Listeners: Multi Options ---
+        document.querySelectorAll('.multi-opt').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.multi-opt').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                multiVoiceId = btn.dataset.voice;
+                multiLang = btn.dataset.lang;
+                multiLabel = btn.dataset.label;
+                detailMulti.textContent = `${multiLabel} Voice Selected`;
+
+                if(activeSession === 'multi') disconnect(); // Reset if changing settings while live
+            });
+        });
+
+        // --- Main Connection Logic ---
+        async function toggleConnection(type) {
+            // If clicking the active button, disconnect
+            if (activeSession === type) {
+                disconnect();
+                return;
+            }
+
+            // If another session is active, disconnect it first
+            if (activeSession) {
+                disconnect();
+                // Short delay to allow cleanup
+                await new Promise(r => setTimeout(r, 300));
+            }
+
+            // Start new session
+            activeSession = type;
+            startWebRTC(type);
+        }
+
+        async function startWebRTC(type) {
+            // UI Updates for Connecting State
+            const isEng = type === 'english';
+            const btn = isEng ? btnEng : btnMulti;
+            const status = isEng ? statusEng : statusMulti;
+            const badge = isEng ? badgeEng : badgeMulti;
+            
+            // Determine params
+            const targetVoice = isEng ? engVoiceId : multiVoiceId;
+            const targetLang = isEng ? '' : multiLang;
+
+            try {
+                btn.classList.add('connecting');
+                status.textContent = 'Connecting...';
+                
+                // 1. Get Audio
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                // 2. Setup PC
+                peerConnection = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+
+                stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+                peerConnection.ontrack = (event) => {
+                    const audio = new Audio();
+                    audio.srcObject = event.streams[0];
+                    audio.play();
+                };
+
+                // 3. Offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                await new Promise(resolve => {
+                    if (peerConnection.iceGatheringState === 'complete') resolve();
+                    else peerConnection.addEventListener('icegatheringstatechange', () => {
+                        if (peerConnection.iceGatheringState === 'complete') resolve();
+                    });
+                });
+
+                // 4. API Call
+                const requestBody = {
+                    sdp: peerConnection.localDescription.sdp,
+                    type: 'offer',
+                    voice_id: targetVoice
+                };
+                if (targetLang) requestBody.language = targetLang;
+
+                const response = await fetch(`${API_BASE}/api/v1/transport/${currentBotId}/webrtc/offer`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) throw new Error(await response.text());
+
+                const data = await response.json();
+                await peerConnection.setRemoteDescription({ type: 'answer', sdp: data.sdp });
+
+                // 5. Success UI
+                btn.classList.remove('connecting');
+                btn.classList.add('active');
+                status.textContent = 'Tap to End';
+                badge.textContent = '● Live Encrypted Feed';
+                badge.classList.remove('error');
+                badge.classList.add('visible');
+
+            } catch (err) {
+                console.error(err);
+                disconnect();
+                status.textContent = 'Connection Failed';
+                badge.textContent = 'Error: ' + err.message;
+                badge.classList.add('visible', 'error');
+            }
+        }
+
+        function disconnect() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            // Reset UI for both to be safe
+            [btnEng, btnMulti].forEach(b => b.classList.remove('active', 'connecting'));
+            
+            statusEng.textContent = 'Tap to Start';
+            statusMulti.textContent = 'Tap to Start';
+            
+            badgeEng.classList.remove('visible');
+            badgeMulti.classList.remove('visible');
+
+            activeSession = null;
+        }
+
+        window.addEventListener('beforeunload', disconnect);
+
+    </script>
+</body>
+</html>

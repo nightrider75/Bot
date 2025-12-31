@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{page_title}}</title>
+        <style>
+            body {
+                font-family:
+                    system-ui,
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                margin: 0;
+                background-color: #f5f7fb;
+                color: #111827;
+            }
+
+            .page {
+                max-width: 1100px;
+                margin: 0 auto;
+                padding: 32px 24px 48px;
+            }
+
+            h1 {
+                margin-bottom: 16px;
+                font-size: 32px;
+                font-weight: 600;
+            }
+
+            .panel {
+                background: #fff;
+                border-radius: 12px;
+                padding: 24px;
+                margin-bottom: 24px;
+                box-shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+            }
+
+            .panel h2 {
+                margin-top: 0;
+                font-size: 20px;
+                font-weight: 600;
+            }
+
+            label {
+                display: block;
+                font-size: 14px;
+                margin-bottom: 6px;
+                color: #374151;
+            }
+
+            input {
+                width: 100%;
+                padding: 10px 14px;
+                border-radius: 8px;
+                border: 1px solid #d1d5db;
+                margin-bottom: 14px;
+                font-size: 14px;
+            }
+
+            button {
+                padding: 10px 18px;
+                border-radius: 8px;
+                border: none;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition:
+                    transform 0.1s ease,
+                    box-shadow 0.1s ease;
+            }
+
+            button.primary {
+                background: #2563eb;
+                color: white;
+                box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+            }
+
+            button.danger {
+                background: #dc2626;
+                color: white;
+            }
+
+            button.secondary {
+                background: #6b7280;
+                color: white;
+                margin-right: 8px;
+            }
+
+            button:active {
+                transform: translateY(1px);
+            }
+
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-top: 16px;
+            }
+
+            th,
+            td {
+                padding: 12px 10px;
+                text-align: left;
+                font-size: 14px;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            tbody tr:hover {
+                background: #f9fafb;
+            }
+
+            .actions button {
+                margin-right: 6px;
+            }
+
+            #status {
+                padding: 10px 14px;
+                border-radius: 8px;
+                margin-bottom: 16px;
+                display: none;
+            }
+
+            #status.success {
+                background: #d1fae5;
+                color: #047857;
+            }
+
+            #status.error {
+                background: #fee2e2;
+                color: #b91c1c;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="page">
+            <h1>{{page_title}}</h1>
+            <div id="status"></div>
+
+            <div class="panel">
+                <h2>Create new mapping</h2>
+                <form id="create-form">
+                    <label for="create-assistant-id">Assistant ID</label>
+                    <input
+                        id="create-assistant-id"
+                        name="assistant_id"
+                        required
+                        placeholder="e.g. plivo-outbound-123"
+                    />
+                    <label for="create-bot-id">Bot ID (UUID)</label>
+                    <input
+                        id="create-bot-id"
+                        name="bot_id"
+                        required
+                        placeholder="e.g. 1e4d..."
+                    />
+                    <button class="primary" type="submit">
+                        Create mapping
+                    </button>
+                </form>
+            </div>
+
+            <div class="panel" id="update-panel" style="display: none">
+                <h2>Update mapping</h2>
+                <form id="update-form">
+                    <input type="hidden" id="update-id" />
+                    <label for="update-assistant-id">Assistant ID</label>
+                    <input
+                        id="update-assistant-id"
+                        name="assistant_id"
+                        required
+                    />
+                    <label for="update-bot-id">Bot ID (UUID)</label>
+                    <input id="update-bot-id" name="bot_id" required />
+                    <button class="primary" type="submit">Save changes</button>
+                    <button class="secondary" type="button" id="update-cancel">
+                        Cancel
+                    </button>
+                </form>
+            </div>
+
+            <div class="panel">
+                <h2>Existing mappings</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Assistant ID</th>
+                            <th>Bot ID</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mappings-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE = "/api/v1/platform/assistant-mappings";
+            const statusEl = document.getElementById("status");
+            const tableBody = document.getElementById("mappings-body");
+            const updatePanel = document.getElementById("update-panel");
+
+            const showStatus = (message, type = "success") => {
+                statusEl.textContent = message;
+                statusEl.className = "";
+                statusEl.classList.add(type);
+                statusEl.style.display = "block";
+                setTimeout(() => {
+                    statusEl.style.display = "none";
+                }, 4500);
+            };
+
+            async function fetchMappings() {
+                try {
+                    const response = await fetch(API_BASE + "/");
+                    const data = await response.json();
+                    tableBody.innerHTML = "";
+                    data.forEach((mapping) => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                        <td>${mapping.id}</td>
+                        <td>${mapping.assistant_id}</td>
+                        <td>${mapping.bot_id}</td>
+                        <td class="actions">
+                            <button type="button" data-id="${mapping.id}" class="secondary edit">Edit</button>
+                            <button type="button" data-id="${mapping.id}" class="danger delete">Delete</button>
+                        </td>
+                    `;
+                        tableBody.appendChild(row);
+                    });
+                } catch (error) {
+                    showStatus(
+                        "Failed to load mappings. Check console for details.",
+                        "error",
+                    );
+                    console.error(error);
+                }
+            }
+
+            document
+                .getElementById("create-form")
+                .addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const assistantId = document
+                        .getElementById("create-assistant-id")
+                        .value.trim();
+                    const botId = document
+                        .getElementById("create-bot-id")
+                        .value.trim();
+                    try {
+                        const response = await fetch(API_BASE + "/", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                assistant_id: assistantId,
+                                bot_id: botId,
+                            }),
+                        });
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(
+                                error.detail || "Unable to create mapping",
+                            );
+                        }
+                        document.getElementById("create-form").reset();
+                        showStatus("Mapping created");
+                        fetchMappings();
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    }
+                });
+
+            document
+                .getElementById("update-form")
+                .addEventListener("submit", async (event) => {
+                    event.preventDefault();
+                    const mappingId =
+                        document.getElementById("update-id").value;
+                    const assistantId = document
+                        .getElementById("update-assistant-id")
+                        .value.trim();
+                    const botId = document
+                        .getElementById("update-bot-id")
+                        .value.trim();
+                    try {
+                        const response = await fetch(
+                            `${API_BASE}/${mappingId}`,
+                            {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json",
+                                },
+                                body: JSON.stringify({
+                                    assistant_id: assistantId,
+                                    bot_id: botId,
+                                }),
+                            },
+                        );
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(
+                                error.detail || "Unable to update mapping",
+                            );
+                        }
+                        showStatus("Mapping updated");
+                        updatePanel.style.display = "none";
+                        fetchMappings();
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    }
+                });
+
+            document
+                .getElementById("update-cancel")
+                .addEventListener("click", () => {
+                    updatePanel.style.display = "none";
+                });
+
+            tableBody.addEventListener("click", async (event) => {
+                const button = event.target.closest("button");
+                if (!button) {
+                    return;
+                }
+                const mappingId = button.getAttribute("data-id");
+                if (button.classList.contains("delete")) {
+                    if (!confirm("Delete this mapping?")) {
+                        return;
+                    }
+                    try {
+                        const response = await fetch(
+                            `${API_BASE}/${mappingId}`,
+                            {
+                                method: "DELETE",
+                            },
+                        );
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(
+                                error.detail || "Unable to delete mapping",
+                            );
+                        }
+                        showStatus("Mapping deleted");
+                        fetchMappings();
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    }
+                    return;
+                }
+                if (button.classList.contains("edit")) {
+                    try {
+                        const response = await fetch(
+                            `${API_BASE}/${mappingId}`,
+                        );
+                        if (!response.ok) {
+                            throw new Error("Unable to fetch mapping");
+                        }
+                        const mapping = await response.json();
+                        document.getElementById("update-id").value = mapping.id;
+                        document.getElementById("update-assistant-id").value =
+                            mapping.assistant_id;
+                        document.getElementById("update-bot-id").value =
+                            mapping.bot_id;
+                        updatePanel.style.display = "block";
+                    } catch (error) {
+                        showStatus(error.message, "error");
+                    }
+                }
+            });
+
+            document.addEventListener("DOMContentLoaded", () => {
+                fetchMappings();
+            });
+        </script>
+    </body>
+</html>

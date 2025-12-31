@@ -1,0 +1,1230 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <script src="https://cdn.jsdelivr.net/npm/protobufjs@7.X.X/dist/protobuf.min.js"></script>
+        <title>Bot Hub</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Oxygen, Ubuntu, Cantarell, sans-serif;
+                background-color: #f9fafb;
+                color: #111827;
+            }
+
+            .header {
+                background-color: white;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                padding: 24px;
+            }
+
+            .header-content {
+                max-width: 1280px;
+                margin: 0 auto;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            h1 {
+                font-size: 30px;
+                font-weight: 700;
+                color: #111827;
+            }
+
+            .config-btn {
+                background-color: #2563eb;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .config-btn:hover {
+                background-color: #1d4ed8;
+            }
+
+            .container {
+                max-width: 1280px;
+                margin: 0 auto;
+                padding: 24px;
+            }
+
+            .error-box {
+                background-color: #fee2e2;
+                border: 1px solid #f87171;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 24px;
+                display: none;
+                font-weight: 500;
+                color: #991b1b;
+            }
+
+            .error-box.show {
+                display: block;
+            }
+
+            .error-content h3 {
+                font-size: 14px;
+                font-weight: 500;
+                color: #991b1b;
+                margin-bottom: 4px;
+            }
+
+            .error-content p {
+                font-size: 14px;
+                color: #991b1b;
+            }
+
+            .loading {
+                display: none;
+                justify-content: center;
+                align-items: center;
+                padding: 48px;
+            }
+
+            .loading.show {
+                display: flex;
+            }
+
+            .spinner {
+                width: 48px;
+                height: 48px;
+                border: 3px solid #e5e7eb;
+                border-top-color: #2563eb;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .bots-card {
+                background-color: white;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                overflow: hidden;
+                margin-bottom: 24px;
+            }
+
+            .bots-header {
+                padding: 16px 24px;
+                border-bottom: 1px solid #e5e7eb;
+                background-color: #f8fafc;
+            }
+
+            .bots-header h2 {
+                font-size: 18px;
+                font-weight: 600;
+                color: #111827;
+                margin-bottom: 4px;
+            }
+
+            .bots-header p {
+                font-size: 14px;
+                color: #6b7280;
+            }
+
+            .bots-list {
+                display: none;
+            }
+
+            .bots-list.show {
+                display: block;
+            }
+
+            .bot-item {
+                padding: 16px 24px;
+                border-bottom: 1px solid #e5e7eb;
+                transition: background-color 0.2s;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                background-color: white;
+            }
+            .integrations-btn {
+                margin-left: 8px;
+                background-color: #e0e7ff;
+                color: #3730a3;
+                border: none;
+                border-radius: 6px;
+                padding: 8px 14px;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                transition: background 0.2s;
+            }
+            .integrations-btn:hover {
+                background-color: #6366f1;
+                color: white;
+            }
+            .integrations-list {
+                margin: 20px 0 0 0;
+            }
+            .integration-row {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid #f3f4f6;
+                gap: 8px;
+            }
+            .integration-label {
+                flex-basis: 56%;
+                font-weight: 500;
+                color: #1e293b;
+            }
+            .integration-url {
+                flex-basis: 36%;
+                font-family: monospace;
+                font-size: 13px;
+                padding: 2px 4px;
+                background: #f3f4f6;
+                border-radius: 3px;
+                overflow-x: auto;
+            }
+            .integration-copy-btn {
+                background: none;
+                border: none;
+                color: #7c3aed;
+                cursor: pointer;
+                font-size: 15px;
+                margin-left: 8px;
+                transition: color 0.2s;
+            }
+            .integration-copy-btn:hover {
+                color: #a78bfa;
+            }
+
+            .bot-item:last-child {
+                border-bottom: none;
+            }
+
+            .bot-item:hover {
+                background-color: #f9fafb;
+            }
+
+            .bot-info {
+                flex: 1;
+                cursor: pointer;
+            }
+
+            .bot-name {
+                font-weight: 500;
+                color: #111827;
+            }
+
+            .bot-arrow {
+                color: #2563eb;
+                opacity: 0;
+                transition: opacity 0.2s;
+            }
+
+            .bot-item:hover .bot-arrow {
+                opacity: 1;
+            }
+
+            .bot-actions {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .test-btn {
+                background-color: #10b981;
+                color: white;
+                border: none;
+                padding: 6px 12px;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: background-color 0.2s;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+            }
+
+            .test-btn:hover:not(:disabled) {
+                background-color: #059669;
+            }
+
+            .test-btn:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .test-btn-websocket,
+            .test-btn-webrtc,
+            .test-btn-outbound {
+                padding: 6px 12px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                font-size: 12px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                transition: all 0.2s;
+            }
+
+            .test-btn-outbound {
+                background: #8b5cf6;
+            }
+
+            .test-btn-websocket:hover:not(:disabled),
+            .test-btn-webrtc:hover:not(:disabled) {
+                background: #1d4ed8;
+            }
+
+            .test-btn-outbound:hover:not(:disabled) {
+                background: #7c3aed;
+            }
+
+            .test-btn-websocket:disabled,
+            .test-btn-webrtc:disabled,
+            .test-btn-outbound:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+
+            .empty-state {
+                padding: 48px 24px;
+                text-align: center;
+                color: #6b7280;
+                display: none;
+                font-size: 14px;
+            }
+
+            .empty-state.show {
+                display: block;
+            }
+            /* Create Bot Button */
+            .create-bot-btn {
+                padding: 10px 18px;
+                background: #2563eb;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                transition: all 0.2s;
+            }
+
+            .create-bot-btn:hover {
+                background: #1d4ed8;
+            }
+
+            /* Modal */
+            .modal {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1000;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .modal.active {
+                display: flex;
+            }
+
+            .modal-content {
+                background: white;
+                border-radius: 12px;
+                width: 90%;
+                max-width: 70vw;
+                box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            }
+
+            .modal-header {
+                padding: 20px 24px;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .modal-header h2 {
+                margin: 0;
+                font-size: 20px;
+                color: #111827;
+            }
+
+            .modal-close {
+                background: none;
+                border: none;
+                font-size: 28px;
+                color: #6b7280;
+                cursor: pointer;
+                line-height: 1;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+            }
+
+            .modal-close:hover {
+                color: #111827;
+            }
+
+            .form-group {
+                padding: 24px;
+            }
+
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 500;
+                color: #374151;
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                font-size: 14px;
+                box-sizing: border-box;
+                transition:
+                    border-color 0.2s,
+                    box-shadow 0.2s;
+            }
+
+            .form-group input:focus {
+                outline: none;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .form-group small {
+                display: block;
+                margin-top: 4px;
+                color: #6b7280;
+                font-size: 12px;
+            }
+
+            .form-group select {
+                width: 100%;
+                padding: 10px 12px;
+                border: 1px solid #d1d5db;
+                border-radius: 8px;
+                font-size: 14px;
+                box-sizing: border-box;
+                background-color: white;
+                cursor: pointer;
+            }
+
+            .form-group select:focus {
+                outline: none;
+                border-color: #2563eb;
+                box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            }
+
+            .form-group + .form-group {
+                padding-top: 0;
+            }
+
+            .success-box {
+                background-color: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 8px;
+                padding: 12px 16px;
+                margin-bottom: 24px;
+                display: none;
+            }
+
+            .success-box.show {
+                display: block;
+            }
+
+            .success-content h3 {
+                font-size: 14px;
+                font-weight: 500;
+                color: #166534;
+                margin-bottom: 4px;
+            }
+
+            .success-content p {
+                font-size: 14px;
+                color: #15803d;
+            }
+
+            .modal-footer {
+                padding: 16px 24px;
+                border-top: 1px solid #e5e7eb;
+                display: flex;
+                gap: 12px;
+                justify-content: flex-end;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                border: none;
+                transition: all 0.2s;
+            }
+
+            .btn-primary {
+                background: #2563eb;
+                color: white;
+            }
+
+            .btn-primary:hover {
+                background: #1d4ed8;
+            }
+
+            .btn-secondary {
+                background: #f3f4f6;
+                color: #374151;
+            }
+
+            .btn-secondary:hover {
+                background: #e5e7eb;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Header -->
+        <div class="header">
+            <div class="header-content">
+                <h1 id="botName">Loading...</h1>
+                <div style="display: flex; gap: 10px">
+                    <button class="create-bot-btn" id="uploadAssetsBtn">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"
+                            ></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        Upload Platform Assets
+                    </button>
+                    <button class="create-bot-btn" id="createBotBtn">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Create Bot
+                    </button>
+                    <button class="create-bot-btn" id="platformMappingsBtn">
+                        <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        Platform Mappings
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Create Bot Modal -->
+        <div class="modal" id="createBotModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Create New Bot</h2>
+                    <button class="modal-close" id="closeModal">&times;</button>
+                </div>
+                <form id="createBotForm">
+                    <div class="form-group">
+                        <label for="botNameInput">Bot Name</label>
+                        <input
+                            type="text"
+                            id="botNameInput"
+                            placeholder="Enter bot name"
+                            required
+                        />
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            id="cancelBtn"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            Create
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Outbound Call Modal -->
+        <div class="modal" id="outboundCallModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Test Outbound Call</h2>
+                    <button class="modal-close" id="closeOutboundModal">
+                        &times;
+                    </button>
+                </div>
+                <form id="outboundCallForm">
+                    <div class="form-group">
+                        <label for="phoneNumberInput">Phone Number</label>
+                        <input
+                            type="tel"
+                            id="phoneNumberInput"
+                            placeholder="+1234567890 (E.164 format)"
+                            required
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="providerSelect">Provider</label>
+                        <select id="providerSelect" required>
+                            <option value="">Select a provider</option>
+                            <option value="twilio">Twilio</option>
+                            <option value="plivo">Plivo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="userIdInput">User ID (Optional)</label>
+                        <input
+                            type="text"
+                            id="userIdInput"
+                            placeholder="Enter user ID (optional)"
+                        />
+                        <small
+                            >If not provided, phone number will be used as user
+                            ID</small
+                        >
+                    </div>
+                    <div class="modal-footer">
+                        <button
+                            type="button"
+                            class="btn-secondary"
+                            id="cancelOutboundBtn"
+                        >
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn-primary">
+                            Make Call
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- Content -->
+        <div class="container">
+            <!-- Error Box -->
+            <div class="error-box" id="errorBox">
+                <div class="error-content">
+                    <strong>Error:</strong> <span id="errorMessage"></span>
+                </div>
+            </div>
+
+            <!-- Success Box -->
+            <div class="success-box" id="successBox">
+                <div class="success-content">
+                    <h3>Success</h3>
+                    <p id="successMessage"></p>
+                </div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+            </div>
+
+            <!-- Bots Card -->
+            <div class="bots-card">
+                <div class="bots-header">
+                    <h2>Bots (<span id="botCount">0</span>)</h2>
+                    <p>Manage and test your voice bots</p>
+                </div>
+                <div class="bots-list" id="botsList"></div>
+                <div class="empty-state" id="emptyState">No bots found</div>
+            </div>
+        </div>
+
+        <script>
+            const apiBaseUrl = window.location.origin;
+
+            // Initialize
+            document.addEventListener("DOMContentLoaded", () => {
+                const platformMappingsBtn = document.getElementById(
+                    "platformMappingsBtn",
+                );
+                fetchBotData();
+
+                // Event listeners
+                document
+                    .getElementById("uploadAssetsBtn")
+                    .addEventListener("click", () => {
+                        window.location.href = "/assets";
+                    });
+                document
+                    .getElementById("configBtn")
+                    ?.addEventListener("click", handleConfigClick);
+                platformMappingsBtn?.addEventListener(
+                    "click",
+                    handlePlatformMappingsClick,
+                );
+            });
+            // Modal functionality
+            const createBotBtn = document.getElementById("createBotBtn");
+            const createBotModal = document.getElementById("createBotModal");
+            const closeModal = document.getElementById("closeModal");
+            const cancelBtn = document.getElementById("cancelBtn");
+            const createBotForm = document.getElementById("createBotForm");
+
+            // Open modal
+            createBotBtn.addEventListener("click", () => {
+                createBotModal.classList.add("active");
+                document.getElementById("botNameInput").focus();
+            });
+
+            // Close modal
+            const closeModalFunc = () => {
+                createBotModal.classList.remove("active");
+                createBotForm.reset();
+            };
+
+            closeModal.addEventListener("click", closeModalFunc);
+            cancelBtn.addEventListener("click", closeModalFunc);
+
+            // Close on outside click
+            createBotModal.addEventListener("click", (e) => {
+                if (e.target === createBotModal) {
+                    closeModalFunc();
+                }
+            });
+
+            // Handle form submission
+            createBotForm.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const botName = document.getElementById("botNameInput").value;
+
+                // Your bot creation logic here
+                console.log("Creating bot:", botName);
+
+                // Fetch bots
+                fetch(`/api/v1/bot_hub/`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        bot_name: botName,
+                    }),
+                })
+                    .then((botResponse) => {
+                        if (!botResponse.ok)
+                            throw new Error("Failed to create bot");
+                        return botResponse.json();
+                    })
+                    .then((botData) => {
+                        console.log("Created bot:", botData);
+                        // Close modal after creation
+                        closeModalFunc();
+                        // Refresh the bot list
+                        fetchBotData();
+                    })
+                    .catch((error) => {
+                        showError(`Failed to create bot: ${error.message}`);
+                    });
+            });
+
+            function fetchBotData() {
+                const loading = document.getElementById("loading");
+                const errorBox = document.getElementById("errorBox");
+                const botsList = document.getElementById("botsList");
+                const emptyState = document.getElementById("emptyState");
+
+                // Show loading
+                loading.classList.add("show");
+                errorBox.classList.remove("show");
+                botsList.classList.remove("show");
+                emptyState.classList.remove("show");
+
+                try {
+                    // Fetch bot details
+                    fetch(`${apiBaseUrl}/api/v1/bot_hub/`)
+                        .then((botResponse) => {
+                            if (!botResponse.ok)
+                                throw new Error("Failed to fetch bots");
+                            return botResponse.json();
+                        })
+                        .then((botsData) => {
+                            document.getElementById("botName").textContent =
+                                "Platform";
+                            displayBots(botsData.bots);
+                            return botsData;
+                        });
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    loading.classList.remove("show");
+                }
+            }
+
+            function displayBots(bots) {
+                const botsList = document.getElementById("botsList");
+                const emptyState = document.getElementById("emptyState");
+                const botCount = document.getElementById("botCount");
+
+                botCount.textContent = bots.length;
+
+                if (bots.length === 0) {
+                    emptyState.classList.add("show");
+                    return;
+                }
+
+                botsList.innerHTML = "";
+                bots.forEach((bot) => {
+                    const botItem = document.createElement("div");
+                    botItem.className = "bot-item";
+                    botItem.innerHTML = `
+                    <div class="bot-info">
+                        <span class="bot-name">${bot.name}</span>
+                        <span class="bot-arrow">→</span>
+                    </div>
+                    <div class="bot-actions">
+                        <button class="test-btn-websocket" data-bot-id="${bot.id}" data-bot-name="${bot.name}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5,3 19,12 5,21"></polygon>
+                            </svg>
+                            Test Websocket
+                        </button>
+                        <button class="test-btn-webrtc" data-bot-id="${bot.id}" data-bot-name="${bot.name}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5,3 19,12 5,21"></polygon>
+                            </svg>
+                            Test WebRTC
+                        </button>
+                        <button class="test-btn-outbound" data-bot-id="${bot.id}" data-bot-name="${bot.name}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                            </svg>
+                            Test Outbound
+                        </button>
+                    </div>
+                `;
+                    // Add the integrations button next to actions
+                    const integrationsBtn = document.createElement("button");
+                    integrationsBtn.className = "integrations-btn";
+                    integrationsBtn.innerHTML = `<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:middle"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>Integrations`;
+                    integrationsBtn.onclick = function (e) {
+                        e.stopPropagation();
+                        openIntegrationsModal(bot);
+                    };
+                    botItem
+                        .querySelector(".bot-actions")
+                        .appendChild(integrationsBtn);
+
+                    // Add click handler for bot info
+                    botItem
+                        .querySelector(".bot-info")
+                        .addEventListener("click", () =>
+                            handleBotClick(bot.id),
+                        );
+
+                    // Add click handler for test buttons
+                    botItem
+                        .querySelector(".test-btn-websocket")
+                        .addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            handleTestWebsocket(bot.id, bot.name);
+                        });
+
+                    botItem
+                        .querySelector(".test-btn-webrtc")
+                        .addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            handleTestWebrtc(bot.id, bot.name);
+                        });
+
+                    botItem
+                        .querySelector(".test-btn-outbound")
+                        .addEventListener("click", (e) => {
+                            e.stopPropagation();
+                            handleTestOutbound(bot.id, bot.name);
+                        });
+
+                    botsList.appendChild(botItem);
+                });
+
+                botsList.classList.add("show");
+            }
+
+            function handleBotClick(botId) {
+                const url = `${apiBaseUrl}/bot/${botId}`;
+                window.open(url, "_blank");
+            }
+
+            function handleTestWebsocket(botId, botName) {
+                const testUrl = `/test/websocket?bot_id=${botId}&bot_name=${encodeURIComponent(botName)}`;
+                window.open(testUrl, "_blank");
+            }
+
+            function handleTestWebrtc(botId, botName) {
+                const testUrl = `/test/webrtc?bot_id=${botId}&bot_name=${encodeURIComponent(botName)}`;
+                window.open(testUrl, "_blank");
+            }
+
+            let currentBotId = null;
+
+            function handleTestOutbound(botId, botName) {
+                currentBotId = botId;
+                document
+                    .getElementById("outboundCallModal")
+                    .classList.add("active");
+                document.getElementById("phoneNumberInput").focus();
+            }
+
+            function handleConfigClick() {
+                const url = `${apiBaseUrl}/bot/${botId}/config`;
+                window.open(url, "_blank");
+            }
+
+            function handlePlatformMappingsClick() {
+                const url = `${apiBaseUrl}/assistant-mappings/ui`;
+                window.open(url, "_blank");
+            }
+
+            // Outbound call modal handlers
+            const outboundCallModal =
+                document.getElementById("outboundCallModal");
+            const closeOutboundModal =
+                document.getElementById("closeOutboundModal");
+            const cancelOutboundBtn =
+                document.getElementById("cancelOutboundBtn");
+            const outboundCallForm =
+                document.getElementById("outboundCallForm");
+
+            const closeOutboundModalFunc = () => {
+                outboundCallModal.classList.remove("active");
+                outboundCallForm.reset();
+                hideSuccess();
+                currentBotId = null;
+            };
+
+            closeOutboundModal.addEventListener(
+                "click",
+                closeOutboundModalFunc,
+            );
+            cancelOutboundBtn.addEventListener("click", closeOutboundModalFunc);
+
+            outboundCallModal.addEventListener("click", (e) => {
+                if (e.target === outboundCallModal) {
+                    closeOutboundModalFunc();
+                }
+            });
+
+            // Handle outbound call form submission
+            outboundCallForm.addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const phoneNumber = document
+                    .getElementById("phoneNumberInput")
+                    .value.trim();
+                const provider =
+                    document.getElementById("providerSelect").value;
+                const userId = document
+                    .getElementById("userIdInput")
+                    .value.trim();
+
+                if (!phoneNumber || !provider || !currentBotId) {
+                    showError("Please fill in phone number and provider");
+                    return;
+                }
+
+                // Disable submit button during request
+                const submitBtn = outboundCallForm.querySelector(
+                    'button[type="submit"]',
+                );
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.textContent = "Calling...";
+
+                try {
+                    const endpoint = `${apiBaseUrl}/api/v1/transport/${currentBotId}/${provider}/outbound/call`;
+
+                    // Build request body with optional user_id
+                    const requestBody = {
+                        phone_number: phoneNumber,
+                    };
+                    if (userId) {
+                        requestBody.user_id = userId;
+                    }
+
+                    const response = await fetch(endpoint, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(requestBody),
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.detail || "Failed to initiate outbound call",
+                        );
+                    }
+
+                    showSuccess(
+                        `Outbound call initiated successfully! Call SID: ${data.call_sid || "N/A"}`,
+                    );
+                    closeOutboundModalFunc();
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            });
+
+            function showError(message) {
+                const errorBox = document.getElementById("errorBox");
+                const errorMessage = document.getElementById("errorMessage");
+                errorMessage.textContent = message;
+                errorBox.classList.add("show");
+                hideSuccess();
+            }
+
+            function showSuccess(message) {
+                const successBox = document.getElementById("successBox");
+                const successMessage =
+                    document.getElementById("successMessage");
+                successMessage.textContent = message;
+                successBox.classList.add("show");
+                hideError();
+
+                // Auto-hide success message after 5 seconds
+                setTimeout(() => {
+                    hideSuccess();
+                }, 5000);
+            }
+
+            function hideError() {
+                const errorBox = document.getElementById("errorBox");
+                errorBox.classList.remove("show");
+            }
+
+            function hideSuccess() {
+                const successBox = document.getElementById("successBox");
+                successBox.classList.remove("show");
+            }
+        </script>
+        <!-- Integrations Modal -->
+        <div
+            id="integrationsModal"
+            class="modal"
+            tabindex="-1"
+            aria-hidden="true"
+        >
+            <div class="modal-content" style="padding: 30px; min-width: 340px">
+                <div
+                    class="modal-header"
+                    style="
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    "
+                >
+                    <h2
+                        id="integrationsModalTitle"
+                        style="font-size: 19px; margin: 0"
+                    >
+                        Integrations
+                    </h2>
+                    <button
+                        class="modal-close"
+                        id="closeIntegrationsModal"
+                        style="
+                            font-size: 25px;
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                        "
+                    >
+                        &times;
+                    </button>
+                </div>
+                <div class="integrations-list" id="integrationsList">
+                    <!-- Dynamic rows inserted here -->
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // Integrations functionality
+            const integrationsModal =
+                document.getElementById("integrationsModal");
+            const integrationsList =
+                document.getElementById("integrationsList");
+            const closeIntegrationsModal = document.getElementById(
+                "closeIntegrationsModal",
+            );
+            const integrationsModalTitle = document.getElementById(
+                "integrationsModalTitle",
+            );
+            let currentIntegrationsBot = null;
+
+            // Integration formats config
+            // Integration formats: Reference FastAPI route patterns & description
+            const integrationFormats = [
+                {
+                    label: "Twilio Incoming Call (Webhook, use as Voice URL)",
+                    url: (bot_id, base) =>
+                        `${base}/api/v1/transport/${bot_id}/twilio/incoming_call`,
+                    description:
+                        "Twilio incoming call event endpoint (set as Voice Webhook URL in Twilio Console)",
+                },
+                {
+                    label: "Twilio SIP Incoming Call (Webhook, SIP trunking)",
+                    url: (bot_id, base) =>
+                        `${base}/api/v1/transport/${bot_id}/twilio/sip/incoming_call`,
+                    description:
+                        "Twilio SIP incoming call event endpoint (for SIP trunk)",
+                },
+                {
+                    label: "Plivo Incoming Call (Webhook, use as Answer URL)",
+                    url: (bot_id, base) =>
+                        `${base}/api/v1/transport/${bot_id}/plivo/incoming_call`,
+                    description:
+                        "Plivo incoming call event endpoint (set as Answer URL in Plivo Console)",
+                },
+                {
+                    label: "Platform Plivo integration ",
+                    url: (bot_id, base) =>
+                        `wss://${location.host}/api/v1/voicing_outbound_transport/plivo/ws`,
+                    description: "Plivo incoming call websocket from platform",
+                },
+                {
+                    label: "Platform Twilio integration ",
+                    url: (bot_id, base) =>
+                        `wss://${location.host}/api/v1/voicing_outbound_transport/twilio/ws`,
+                    description: "Twilio incoming call websocket from platform",
+                },
+                {
+                    label: "Voicing WebSocket (Platform Local, use wss://)",
+                    url: (bot_id, base) =>
+                        `wss://${location.host}/api/v1/transport/${bot_id}/voicing/ws`,
+                    description:
+                        "WebSocket URL for connecting local clients (always use wss://)",
+                },
+                {
+                    label: "WebRTC Offer (POST)",
+                    url: (bot_id, base) =>
+                        `${base}/api/v1/transport/${bot_id}/webrtc/offer`,
+                    description: "POST - Initiate/connect a WebRTC session",
+                },
+                {
+                    label: "Asterisk WebSocket (use wss://)",
+                    url: (bot_id, base) =>
+                        `wss://${location.host}/api/v1/transport/${bot_id}/asterisk/ws`,
+                    description:
+                        "WebSocket endpoint for Asterisk PBX integration (always use wss://)",
+                },
+            ];
+
+            // Open modal and fill with bot values
+            function openIntegrationsModal(bot) {
+                currentIntegrationsBot = bot;
+                integrationsModalTitle.textContent = `Integrations for "${bot.name}"`;
+                integrationsList.innerHTML = "";
+                const baseUrl = location.origin;
+                integrationFormats.forEach(({ label, url, description }) => {
+                    const theUrl = url(bot.id, baseUrl);
+                    const row = document.createElement("div");
+                    row.className = "integration-row";
+                    row.innerHTML = `
+                        <span class="integration-label">
+                            ${label}
+                            <span style="display:block; font-weight:400; color:#64748b; font-size:12px; margin-top:2px">${description || ""}</span>
+                        </span>
+                        <span class="integration-url" title="${theUrl}">${theUrl}</span>
+                        <button class="integration-copy-btn" title="Copy URL" data-url="${theUrl}">📋</button>
+                    `;
+                    // Copy functionality
+                    row.querySelector(".integration-copy-btn").onclick =
+                        function () {
+                            navigator.clipboard.writeText(theUrl);
+                            this.textContent = "✅";
+                            setTimeout(() => {
+                                this.textContent = "📋";
+                            }, 900);
+                        };
+                    integrationsList.appendChild(row);
+                });
+                integrationsModal.classList.add("active");
+                integrationsModal.setAttribute("aria-hidden", "false");
+            }
+            // Modal close logic
+            function closeIntegrationsModalFunc() {
+                integrationsModal.classList.remove("active");
+                integrationsModal.setAttribute("aria-hidden", "true");
+                integrationsList.innerHTML = "";
+            }
+            closeIntegrationsModal.onclick = closeIntegrationsModalFunc;
+            integrationsModal.onclick = function (e) {
+                if (e.target === integrationsModal)
+                    closeIntegrationsModalFunc();
+            };
+            document.addEventListener("keydown", function (e) {
+                if (
+                    integrationsModal.classList.contains("active") &&
+                    e.key === "Escape"
+                )
+                    closeIntegrationsModalFunc();
+            });
+        </script>
+    </body>
+</html>

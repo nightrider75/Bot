@@ -1,0 +1,12 @@
+[FORMAT]
+max-line-length=150
+
+[MESSAGES CONTROL]
+disable=C0111  # missing-docstring - Since we're using ruff for style checks
+
+[BASIC]
+good-names=id,db,ip  # Common short variable names that are acceptable
+
+[DESIGN]
+max-args=10  # Increased from default 5 since we have complex function signatures
+min-public-methods=1  # Reduced from default 2 since we have some data classes

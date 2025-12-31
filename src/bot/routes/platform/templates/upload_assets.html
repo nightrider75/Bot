@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Platform Assets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: #f9fafb;
+            color: #111827;
+        }
+
+        .header {
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        .header-content {
+            max-width: 1280px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 30px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .back-btn {
+            background-color: #6b7280;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .back-btn:hover {
+            background-color: #4b5563;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .upload-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .upload-card h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .upload-card p {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 24px;
+        }
+
+        .upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 48px 24px;
+            text-align: center;
+            transition: all 0.2s;
+            cursor: pointer;
+            background-color: #f9fafb;
+        }
+
+        .upload-area:hover {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #2563eb;
+            background-color: #dbeafe;
+        }
+
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 16px;
+            color: #6b7280;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            font-weight: 500;
+            color: #111827;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 16px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            background-color: #1d4ed8;
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-info {
+            margin-top: 24px;
+            padding: 16px;
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .file-info-label {
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .file-info-value {
+            color: #6b7280;
+        }
+
+        .error-box {
+            background-color: #fee2e2;
+            border: 1px solid #f87171;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            display: none;
+            font-weight: 500;
+            color: #991b1b;
+        }
+
+        .error-box.show {
+            display: block;
+        }
+
+        .success-box {
+            background-color: #d1fae5;
+            border: 1px solid #10b981;
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 24px;
+            display: none;
+            font-weight: 500;
+            color: #065f46;
+        }
+
+        .success-box.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #2563eb;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .assets-list {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .assets-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            background-color: #f8fafc;
+        }
+
+        .assets-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .assets-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .assets-items {
+            padding: 16px 24px;
+        }
+
+        .asset-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .asset-item:last-child {
+            border-bottom: none;
+        }
+
+        .asset-name {
+            font-weight: 500;
+            color: #111827;
+        }
+
+        .asset-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+
+        .asset-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .delete-btn {
+            background-color: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .delete-btn:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+
+        .delete-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .delete-btn .spinner {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+            margin-right: 0;
+        }
+
+        .empty-state {
+            padding: 48px 24px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #111827;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        .form-select:hover {
+            border-color: #9ca3af;
+        }
+
+        .form-select:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>Upload Platform Assets</h1>
+            <a href="/" class="back-btn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Back to Platform
+            </a>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="container">
+        <!-- Error Box -->
+        <div class="error-box" id="errorBox">
+            <span id="errorMessage"></span>
+        </div>
+
+        <!-- Success Box -->
+        <div class="success-box" id="successBox">
+            <span id="successMessage"></span>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="upload-card">
+            <h2>Upload Platform Asset</h2>
+            <p>Select an audio file to upload as a platform asset. Supported formats: MP3, WAV, M4A, OGG</p>
+            
+            <div class="form-group">
+                <label class="form-label" for="assetTypeSelect">Asset Type</label>
+                <select class="form-select" id="assetTypeSelect">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+
+            <div class="upload-area" id="uploadArea">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <div class="upload-text">Click to select or drag and drop</div>
+                <div class="upload-hint">Audio files only (MP3, WAV, M4A, OGG)</div>
+                <input type="file" id="fileInput" class="file-input" accept="audio/*">
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-info-item">
+                    <span class="file-info-label">File:</span>
+                    <span class="file-info-value" id="fileName">-</span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">Size:</span>
+                    <span class="file-info-value" id="fileSize">-</span>
+                </div>
+                <div class="file-info-item">
+                    <span class="file-info-label">Type:</span>
+                    <span class="file-info-value" id="fileType">-</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; text-align: center;">
+                <button class="upload-btn" id="uploadBtn" disabled>
+                    <span class="loading" id="uploadLoading">
+                        <span class="spinner"></span>
+                    </span>
+                    <span id="uploadBtnText">Upload File</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Assets List -->
+        <div class="assets-list">
+            <div class="assets-header">
+                <h2>Uploaded Assets (<span id="assetCount">0</span>)</h2>
+                <p>Platform audio assets available for use</p>
+            </div>
+            <div class="assets-items" id="assetsList">
+                <div class="empty-state">Loading assets...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const apiBaseUrl = window.location.origin;
+        let selectedFile = null;
+        // ASSET_TYPES_PLACEHOLDER
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeAssetTypes();
+            setupUploadArea();
+            fetchAssets();
+        });
+
+        function initializeAssetTypes() {
+            const assetTypeSelect = document.getElementById('assetTypeSelect');
+            if (typeof ASSET_TYPES !== 'undefined' && ASSET_TYPES.length > 0) {
+                ASSET_TYPES.forEach(assetType => {
+                    const option = document.createElement('option');
+                    option.value = assetType;
+                    // Format the label: "initial_audio" -> "Initial Audio"
+                    option.textContent = assetType.split('_').map(word => 
+                        word.charAt(0).toUpperCase() + word.slice(1)
+                    ).join(' ');
+                    assetTypeSelect.appendChild(option);
+                });
+            } else {
+                // Fallback if ASSET_TYPES is not injected
+                const option = document.createElement('option');
+                option.value = 'initial_audio';
+                option.textContent = 'Initial Audio';
+                assetTypeSelect.appendChild(option);
+            }
+        }
+
+        function setupUploadArea() {
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            // Click to select file
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+
+            // File input change
+            fileInput.addEventListener('change', (e) => {
+                handleFileSelect(e.target.files[0]);
+            });
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) {
+                    handleFileSelect(file);
+                }
+            });
+
+            // Upload button
+            uploadBtn.addEventListener('click', () => {
+                if (selectedFile) {
+                    uploadFile();
+                }
+            });
+        }
+
+        function handleFileSelect(file) {
+            if (!file) return;
+
+            // Validate audio file
+            if (!file.type.startsWith('audio/')) {
+                showError('Please select an audio file');
+                return;
+            }
+
+            selectedFile = file;
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const fileType = document.getElementById('fileType');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileType.textContent = file.type || 'Unknown';
+            fileInfo.classList.add('show');
+            uploadBtn.disabled = false;
+
+            hideError();
+            hideSuccess();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) return;
+
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadBtnText = document.getElementById('uploadBtnText');
+            const uploadLoading = document.getElementById('uploadLoading');
+            const fileInput = document.getElementById('fileInput');
+
+            // Disable upload button and show loading
+            uploadBtn.disabled = true;
+            uploadBtnText.textContent = 'Uploading...';
+            uploadLoading.classList.add('show');
+            hideError();
+            hideSuccess();
+
+            try {
+                const assetTypeSelect = document.getElementById('assetTypeSelect');
+                const selectedAssetType = assetTypeSelect.value;
+
+                if (!selectedAssetType) {
+                    showError('Please select an asset type');
+                    uploadBtn.disabled = false;
+                    uploadBtnText.textContent = 'Upload File';
+                    uploadLoading.classList.remove('show');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('asset_type', selectedAssetType);
+
+                const response = await fetch(`${apiBaseUrl}/api/v1/platform/assets`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to upload file');
+                }
+
+                const result = await response.json();
+                showSuccess(`File "${result.name}" uploaded successfully!`);
+                
+                // Reset form
+                selectedFile = null;
+                fileInput.value = '';
+                document.getElementById('fileInfo').classList.remove('show');
+                uploadBtn.disabled = true;
+                uploadBtnText.textContent = 'Upload File';
+                uploadLoading.classList.remove('show');
+
+                // Refresh assets list
+                fetchAssets();
+            } catch (error) {
+                showError(error.message);
+                uploadBtn.disabled = false;
+                uploadBtnText.textContent = 'Upload File';
+                uploadLoading.classList.remove('show');
+            }
+        }
+
+        async function fetchAssets() {
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/v1/platform/assets`);
+                if (!response.ok) throw new Error('Failed to fetch assets');
+                
+                const assets = await response.json();
+                displayAssets(assets);
+            } catch (error) {
+                console.error('Error fetching assets:', error);
+                document.getElementById('assetsList').innerHTML = 
+                    '<div class="empty-state">Failed to load assets</div>';
+            }
+        }
+
+        function displayAssets(assets) {
+            const assetsList = document.getElementById('assetsList');
+            const assetCount = document.getElementById('assetCount');
+
+            assetCount.textContent = assets.length;
+
+            if (assets.length === 0) {
+                assetsList.innerHTML = '<div class="empty-state">No assets uploaded yet</div>';
+                return;
+            }
+
+            assetsList.innerHTML = assets.map(asset => `
+                <div class="asset-item">
+                    <div>
+                        <div class="asset-name">${escapeHtml(asset.name)}</div>
+                        <div class="asset-meta">
+                            ${escapeHtml(asset.content_type)} • ${formatDate(asset.created_at)}
+                        </div>
+                    </div>
+                    <div class="asset-actions">
+                        <button class="delete-btn" data-asset-id="${asset.id}" data-asset-name="${escapeHtml(asset.name)}">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach event listeners to delete buttons
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const assetId = btn.getAttribute('data-asset-id');
+                    const assetName = btn.getAttribute('data-asset-name');
+                    deleteAsset(assetId, assetName);
+                });
+            });
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorBox.classList.add('show');
+        }
+
+        function hideError() {
+            document.getElementById('errorBox').classList.remove('show');
+        }
+
+        function showSuccess(message) {
+            const successBox = document.getElementById('successBox');
+            const successMessage = document.getElementById('successMessage');
+            successMessage.textContent = message;
+            successBox.classList.add('show');
+        }
+
+        function hideSuccess() {
+            document.getElementById('successBox').classList.remove('show');
+        }
+
+        async function deleteAsset(assetId, assetName) {
+            // Confirm deletion
+            if (!confirm(`Are you sure you want to delete "${assetName}"? This action cannot be undone.`)) {
+                return;
+            }
+
+            const deleteBtn = document.querySelector(`[data-asset-id="${assetId}"]`);
+            if (!deleteBtn) return;
+
+            // Disable button and show loading
+            deleteBtn.disabled = true;
+            const originalHTML = deleteBtn.innerHTML;
+            deleteBtn.innerHTML = '<span class="spinner"></span> Deleting...';
+
+            hideError();
+            hideSuccess();
+
+            try {
+                const response = await fetch(`${apiBaseUrl}/api/v1/platform/assets/${assetId}`, {
+                    method: 'DELETE'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to delete asset');
+                }
+
+                showSuccess(`Asset "${assetName}" deleted successfully!`);
+                
+                // Refresh assets list
+                fetchAssets();
+            } catch (error) {
+                showError(error.message);
+                // Re-enable button
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHTML;
+            }
+        }
+    </script>
+</body>
+</html>
+
