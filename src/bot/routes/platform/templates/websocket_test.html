@@ -392,7 +392,7 @@
                 document.getElementById('botName').textContent = botName;
                 // Pre-fill WebSocket URL (but allow editing)
                 const baseUrl = getWebSocketBaseUrl();
-                document.getElementById('websocketUrl').value = `${baseUrl}/api/v1/transport/${botId}/voicing/ws`;
+                document.getElementById('websocketUrl').value = `${baseUrl}/api/v1/transport/${botId}/bot/ws`;
                 
                 // Pre-fill user ID (but allow editing)
                 selectUserForBot(botId);

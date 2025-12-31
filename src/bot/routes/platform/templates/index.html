@@ -1144,19 +1144,19 @@
                 {
                     label: "Platform Plivo integration ",
                     url: (bot_id, base) =>
-                        `wss://${location.host}/api/v1/voicing_outbound_transport/plivo/ws`,
+                        `wss://${location.host}/api/v1/bot_outbound_transport/plivo/ws`,
                     description: "Plivo incoming call websocket from platform",
                 },
                 {
                     label: "Platform Twilio integration ",
                     url: (bot_id, base) =>
-                        `wss://${location.host}/api/v1/voicing_outbound_transport/twilio/ws`,
+                        `wss://${location.host}/api/v1/bot_outbound_transport/twilio/ws`,
                     description: "Twilio incoming call websocket from platform",
                 },
                 {
-                    label: "Voicing WebSocket (Platform Local, use wss://)",
+                    label: "Bot WebSocket (Platform Local, use wss://)",
                     url: (bot_id, base) =>
-                        `wss://${location.host}/api/v1/transport/${bot_id}/voicing/ws`,
+                        `wss://${location.host}/api/v1/transport/${bot_id}/bot/ws`,
                     description:
                         "WebSocket URL for connecting local clients (always use wss://)",
                 },
