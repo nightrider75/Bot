@@ -150,6 +150,7 @@ activemq-data/
 # Environments
 .env
 .envrc
+env_file_for_github_secret.txt
 .venv
 env/
 venv/
