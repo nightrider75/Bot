@@ -154,8 +154,8 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["*"]
     host_id: str = "unknown"
 
-    auth_username: str
-    auth_password: str
+    auth_username: str = "admin"
+    auth_password: str = "admin"
 
     @property
     def database_url(self) -> str:

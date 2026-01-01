@@ -23,6 +23,9 @@ from bot.config import settings
 from bot.routes.lib import router
 from bot.routes.platform.lib import router as platform_router
 
+# Log early to show module is loading
+print(f"[STARTUP] Bot app module loading... PORT={settings.port}", flush=True)
+
 nltk.download("punkt_tab")
 
 # Configure logging - output JSON to stdout for Vector to consume
@@ -81,6 +84,18 @@ app.include_router(
     dependencies=[Depends(get_current_username)],
 )
 
+
+@app.get("/health", include_in_schema=False)
+async def health_check():
+    """Health check endpoint for Cloud Run and load balancers."""
+    return {
+        "status": "healthy",
+        "service": "bot-orchestration",
+        "port": settings.port,
+        "workers": settings.workers
+    }
+
+
 # Static files directory
 STATIC_DIR = Path(__file__).parent / "static"
 
@@ -98,12 +113,18 @@ if STATIC_DIR.exists():
 
 def main():
     logger.info(f"Starting bot orchestration Service... with {settings}")
-    uvicorn.run(
-        "bot.app:app",
-        host="0.0.0.0",
-        port=settings.port,
-        workers=settings.workers,
-    )
+    logger.info(f"Server will listen on 0.0.0.0:{settings.port}")
+    logger.info(f"Workers: {settings.workers}")
+    try:
+        uvicorn.run(
+            "bot.app:app",
+            host="0.0.0.0",
+            port=settings.port,
+            workers=settings.workers,
+        )
+    except Exception as e:
+        logger.exception(f"Failed to start server: {e}")
+        raise
 
 
 if __name__ == "__main__":

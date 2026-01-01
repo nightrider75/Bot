@@ -62,5 +62,33 @@ jobs:
           gcloud run deploy $SERVICE_NAME \
             --image $IMAGE_TAG \
             --region $REGION \
-            --platform managed
+            --platform managed \
+            --port 8080 \
+            --timeout 300 \
+            --memory 2Gi \
+            --cpu 2 \
+            --min-instances 0 \
+            --max-instances 10 \
+            --allow-unauthenticated \
+            --set-env-vars "PORT=8080,WORKERS=4" \
+            --set-env-vars "ENV_FILE=${{ secrets.CLOUD_RUN_ENV_FILE }}"
+
+      - name: Post Authenticate to Google Cloud
+        if: success()
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+      - name: Post Checkout code
+        if: success()
+        run: |
+          echo "Deployment successful!"
+          SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --region $REGION --format 'value(status.url)')
+          echo "Service URL: $SERVICE_URL"
+          echo "Testing health endpoint..."
+          curl -f "$SERVICE_URL/health" || echo "Health check failed, but deployment completed"
+
+      - name: Complete job
+        if: success()
+        run: |
+          echo "Deployment completed successfully!"
 

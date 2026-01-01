@@ -46,6 +46,22 @@ RUN poetry run python -c "import nltk; nltk.download('punkt_tab')"
 # Expose port (Cloud Run will set PORT env var)
 EXPOSE 8080
 
-# Create .env from ENV_FILE if provided, then start the application
-CMD sh -c 'if [ -n "$ENV_FILE" ]; then printf "%s" "$ENV_FILE" > /app/.env && echo "Created .env file from ENV_FILE environment variable"; fi && poetry run app'
+# Create a startup script that ensures .env is created before Python runs
+RUN echo '#!/bin/sh\n\
+set -e\n\
+echo "[STARTUP] Starting bot orchestration service..."\n\
+echo "[STARTUP] PORT=${PORT}"\n\
+echo "[STARTUP] WORKERS=${WORKERS}"\n\
+if [ -n "$ENV_FILE" ]; then\n\
+  echo "[STARTUP] Creating .env file from ENV_FILE environment variable"\n\
+  printf "%s" "$ENV_FILE" > /app/.env\n\
+  echo "[STARTUP] .env file created successfully"\n\
+else\n\
+  echo "[STARTUP] No ENV_FILE provided, using existing .env or environment variables"\n\
+fi\n\
+echo "[STARTUP] Launching application..."\n\
+exec poetry run app\n\
+' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
 
