@@ -34,9 +34,11 @@ COPY . .
 # Configure Poetry to not require package metadata validation
 RUN poetry config virtualenvs.create false
 
-# Install dependencies (use --no-root to skip building the package itself)
-# Also use --no-cache to avoid cache issues
-RUN poetry install --no-dev --no-root --no-cache && rm -rf $POETRY_CACHE_DIR
+# Update lock file if pyproject.toml changed (regenerate lock file to sync metadata)
+RUN poetry lock || true
+
+# Install dependencies (use --only main instead of deprecated --no-dev, --no-root to skip building the package)
+RUN poetry install --only main --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Download NLTK data (punkt_tab) - this is required by the app
 RUN poetry run python -c "import nltk; nltk.download('punkt_tab')"
