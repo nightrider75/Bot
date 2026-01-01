@@ -25,17 +25,15 @@ ENV POETRY_NO_INTERACTION=1 \
 # Set work directory
 WORKDIR /app
 
-# Copy Poetry files
-COPY pyproject.toml poetry.lock* ./
-
-# Install dependencies
-RUN poetry install --no-dev && rm -rf $POETRY_CACHE_DIR
-
-# Copy the rest of the application
+# Copy everything first (needed for submodules and local dependencies)
 COPY . .
 
-# Initialize and update git submodules
-RUN git submodule update --init --recursive
+# Submodules should already be cloned during checkout, but ensure they're initialized
+# (This is a no-op if already cloned, but ensures they're available)
+RUN git submodule update --init --recursive || true
+
+# Install dependencies (use --no-root to skip building the package itself)
+RUN poetry install --no-dev --no-root && rm -rf $POETRY_CACHE_DIR
 
 # Download NLTK data (punkt_tab) - this is required by the app
 RUN poetry run python -c "import nltk; nltk.download('punkt_tab')"
