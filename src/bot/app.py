@@ -24,7 +24,11 @@ from bot.routes.lib import router
 from bot.routes.platform.lib import router as platform_router
 
 # Log early to show module is loading
-print(f"[STARTUP] Bot app module loading... PORT={settings.port}", flush=True)
+import os
+print(f"[STARTUP] Bot app module loading...", flush=True)
+print(f"[STARTUP] Environment PORT={os.environ.get('PORT', 'NOT SET')}", flush=True)
+print(f"[STARTUP] Settings PORT={settings.port}", flush=True)
+print(f"[STARTUP] Workers={settings.workers}", flush=True)
 
 nltk.download("punkt_tab")
 
@@ -112,15 +116,24 @@ if STATIC_DIR.exists():
 
 
 def main():
-    logger.info(f"Starting bot orchestration Service... with {settings}")
-    logger.info(f"Server will listen on 0.0.0.0:{settings.port}")
-    logger.info(f"Workers: {settings.workers}")
+    # Ensure we're using the PORT from environment if set by Cloud Run
+    import os
+    port = int(os.environ.get('PORT', settings.port))
+    workers = settings.workers
+    
+    logger.info(f"Starting bot orchestration Service...")
+    logger.info(f"Environment PORT={os.environ.get('PORT', 'not set')}")
+    logger.info(f"Settings port={settings.port}")
+    logger.info(f"Using port={port}")
+    logger.info(f"Server will listen on 0.0.0.0:{port}")
+    logger.info(f"Workers: {workers}")
+    
     try:
         uvicorn.run(
             "bot.app:app",
             host="0.0.0.0",
-            port=settings.port,
-            workers=settings.workers,
+            port=port,
+            workers=workers,
         )
     except Exception as e:
         logger.exception(f"Failed to start server: {e}")

@@ -70,7 +70,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --allow-unauthenticated \
-            --set-env-vars "WORKERS=4,ENV_FILE=${{ secrets.CLOUD_RUN_ENV_FILE }}"
+            --set-env-vars "WORKERS=1,ENV_FILE=${{ secrets.CLOUD_RUN_ENV_FILE }}"
 
       - name: Post Authenticate to Google Cloud
         if: success()

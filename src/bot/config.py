@@ -179,8 +179,12 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
         extra = "allow"
         env_nested_delimiter = "__"
+        # Environment variables take precedence over .env file
+        # This ensures Cloud Run's PORT overrides any PORT in .env
+        case_sensitive = False
 
 
 settings = Settings()
