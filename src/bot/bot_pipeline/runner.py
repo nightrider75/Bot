@@ -28,13 +28,108 @@ from bot.types import (
 )
 
 # Language code to full name mapping for multilingual support
-# Note: We don't include hardcoded greetings - let the LLM generate them based on the bot's actual prompt
+# Includes pre-configured greetings for instant response (no LLM delay)
 LANGUAGE_MAP = {
-    "hi": {"name": "Hindi", "native": "हिंदी", "stt_code": "hi"},
-    "de": {"name": "German", "native": "Deutsch", "stt_code": "de"},
-    "fr": {"name": "French", "native": "Français", "stt_code": "fr"},
+    # English Accents/Variations
+    "en-US": {
+        "name": "US English",
+        "native": "English (US)",
+        "stt_code": "en-US",
+        "greetings": {
+            "hospitality": "Hello! Welcome to our hotel. How can I assist you today?",
+            "sales_outbound": "Hi there! This is a quick call to share some exciting opportunities with you. Do you have a moment?",
+            "sales_inbound": "Hi! Welcome to our sales line. How can I assist you today?",
+            "companion": "Hey there! It's nice to hear from you. What's on your mind today?",
+            "customer_support": "Hello! Thank you for contacting customer support. How can I help you today?",
+        },
+    },
+    "en-GB": {
+        "name": "UK English",
+        "native": "English (UK)",
+        "stt_code": "en-GB",
+        "greetings": {
+            "hospitality": "Good day! Welcome to our hotel. How may I assist you today?",
+            "sales_outbound": "Hello! I'm calling to share some wonderful opportunities with you. Do you have a moment to chat?",
+            "sales_inbound": "Hello! Welcome to our sales line. How may I help you today?",
+            "companion": "Hello there! Lovely to hear from you. What would you like to talk about today?",
+            "customer_support": "Good day! Thank you for contacting customer support. How may I assist you today?",
+        },
+    },
+    "en-IN": {
+        "name": "Indian English",
+        "native": "English (India)",
+        "stt_code": "en-IN",
+        "greetings": {
+            "hospitality": "Namaste! Welcome to our hotel. How can I help you today?",
+            "sales_outbound": "Hello! I'm calling to share some exciting opportunities with you. Do you have a moment?",
+            "sales_inbound": "Hello! Welcome to our sales line. How can I assist you today?",
+            "companion": "Hello! Nice to hear from you. What would you like to discuss today?",
+            "customer_support": "Hello! Thank you for contacting customer support. How may I help you today?",
+        },
+    },
+    "en-AE": {
+        "name": "UAE English",
+        "native": "English (UAE)",
+        "stt_code": "en",
+        "greetings": {
+            "hospitality": "Welcome! Thank you for choosing our hotel. How may I assist you today?",
+            "sales_outbound": "Hello! I'm reaching out to share some exciting opportunities with you. Do you have a moment?",
+            "sales_inbound": "Welcome! How can I assist you with our services today?",
+            "companion": "Hello! Great to hear from you. What's on your mind today?",
+            "customer_support": "Welcome! Thank you for contacting customer support. How can I help you today?",
+        },
+    },
+    # Multilingual Languages
+    "hi": {
+        "name": "Hindi",
+        "native": "हिंदी",
+        "stt_code": "hi",
+        "greetings": {
+            "hospitality": "नमस्ते! हमारे होटल में आपका स्वागत है। आज मैं आपकी कैसे सहायता कर सकता हूं?",
+            "sales_outbound": "नमस्ते! मैं आपके साथ कुछ रोमांचक अवसर साझा करने के लिए कॉल कर रहा हूं। क्या आपके पास एक क्षण है?",
+            "sales_inbound": "नमस्ते! हमारी सेल्स लाइन में आपका स्वागत है। आज मैं आपकी कैसे सहायता कर सकता हूं?",
+            "companion": "नमस्ते! आपसे बात करके अच्छा लग रहा है। आज आपके मन में क्या है?",
+            "customer_support": "नमस्ते! ग्राहक सहायता से संपर्क करने के लिए धन्यवाद। मैं आज आपकी कैसे मदद कर सकता हूं?",
+        },
+    },
+    "de": {
+        "name": "German",
+        "native": "Deutsch",
+        "stt_code": "de",
+        "greetings": {
+            "hospitality": "Guten Tag! Willkommen in unserem Hotel. Wie kann ich Ihnen heute helfen?",
+            "sales_outbound": "Hallo! Ich rufe an, um einige spannende Möglichkeiten mit Ihnen zu teilen. Haben Sie einen Moment Zeit?",
+            "sales_inbound": "Hallo! Willkommen bei unserer Verkaufsabteilung. Wie kann ich Ihnen heute helfen?",
+            "companion": "Hallo! Schön, von Ihnen zu hören. Worüber möchten Sie heute sprechen?",
+            "customer_support": "Guten Tag! Vielen Dank, dass Sie den Kundensupport kontaktiert haben. Wie kann ich Ihnen heute helfen?",
+        },
+    },
+    "fr": {
+        "name": "French",
+        "native": "Français",
+        "stt_code": "fr",
+        "greetings": {
+            "hospitality": "Bonjour! Bienvenue dans notre hôtel. Comment puis-je vous aider aujourd'hui?",
+            "sales_outbound": "Bonjour! J'appelle pour partager avec vous quelques opportunités passionnantes. Avez-vous un moment?",
+            "sales_inbound": "Bonjour! Bienvenue sur notre ligne de vente. Comment puis-je vous aider aujourd'hui?",
+            "companion": "Bonjour! Ravi d'avoir de vos nouvelles. De quoi aimeriez-vous parler aujourd'hui?",
+            "customer_support": "Bonjour! Merci de contacter le support client. Comment puis-je vous aider aujourd'hui?",
+        },
+    },
+    "es": {
+        "name": "Spanish",
+        "native": "Español",
+        "stt_code": "es",
+        "greetings": {
+            "hospitality": "¡Hola! Bienvenido a nuestro hotel. ¿Cómo puedo ayudarte hoy?",
+            "sales_outbound": "¡Hola! Llamo para compartir algunas oportunidades emocionantes contigo. ¿Tienes un momento?",
+            "sales_inbound": "¡Hola! Bienvenido a nuestra línea de ventas. ¿Cómo puedo ayudarte hoy?",
+            "companion": "¡Hola! Me alegro de saber de ti. ¿De qué te gustaría hablar hoy?",
+            "customer_support": "¡Hola! Gracias por contactar con el soporte al cliente. ¿Cómo puedo ayudarte hoy?",
+        },
+    },
+    # Legacy mappings for backward compatibility
     "it": {"name": "Italian", "native": "Italiano", "stt_code": "it"},
-    "es": {"name": "Spanish", "native": "Español", "stt_code": "es"},
     "ar": {"name": "Arabic", "native": "العربية", "stt_code": "ar"},
 }
 
@@ -106,14 +201,26 @@ async def run_bot(
         bot_config.stt.language = [language_info["stt_code"]]
         # Override TTS language
         bot_config.tts.language = language_info["stt_code"]
-        # Disable the hardcoded initial_audio_phrase so the LLM generates the greeting
-        # in the correct language based on the bot's actual system prompt
-        if bot_config.pipeline_config:
-            bot_config.pipeline_config.initial_audio_phrase = None
-            bot_config.pipeline_config.initial_audio_id = None
-            logger.info(
-                f"Disabled initial_audio_phrase for {language_info['name']} - LLM will generate greeting"
-            )
+        
+        # Set pre-configured greeting for instant response (no LLM delay)
+        if bot_config.pipeline_config and "greetings" in language_info:
+            # Get bot name from bot provider
+            bot_data = await bot.bot_hub.bot_provider.get_bot(bot_identifier)
+            bot_name = bot_data.name
+            if bot_name in language_info["greetings"]:
+                greeting = language_info["greetings"][bot_name]
+                bot_config.pipeline_config.initial_audio_phrase = greeting
+                bot_config.pipeline_config.initial_audio_id = None
+                logger.info(
+                    f"Set pre-configured greeting for {bot_name} in {language_info['name']}: {greeting}"
+                )
+            else:
+                # Fallback: disable greeting if bot type not found
+                bot_config.pipeline_config.initial_audio_phrase = None
+                bot_config.pipeline_config.initial_audio_id = None
+                logger.warning(
+                    f"No pre-configured greeting found for bot '{bot_name}' in {language_info['name']}"
+                )
         logger.debug(
             f"STT language set to: {bot_config.stt.language}, TTS language set to: {bot_config.tts.language}"
         )
@@ -188,14 +295,14 @@ Maintain natural, fluent {language_info['name']} throughout the entire conversat
             # Handle both dict and NodeConfig object
             if hasattr(node_config, "role_messages"):
                 node_config.role_messages.insert(0, language_instruction)
-                # Enable respond_immediately so LLM generates the greeting
-                node_config.respond_immediately = True
+                # DO NOT enable respond_immediately - we have a pre-configured greeting
+                # The greeting will be played via initial_audio_phrase
             else:
                 node_config["role_messages"].insert(0, language_instruction)
-                # Enable respond_immediately so LLM generates the greeting
-                node_config["respond_immediately"] = True
+                # DO NOT enable respond_immediately - we have a pre-configured greeting
+                # The greeting will be played via initial_audio_phrase
             logger.info(
-                f"Injected {language_info['name']} language instruction into system prompt with respond_immediately=True"
+                f"Injected {language_info['name']} language instruction into system prompt (respond_immediately disabled - using pre-configured greeting)"
             )
 
         logger.info("Initializing flow manager with node configuration")
