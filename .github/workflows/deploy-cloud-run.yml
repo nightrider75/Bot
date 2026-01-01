@@ -4,10 +4,6 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
-    types: [closed]
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -17,15 +13,14 @@ env:
 
 jobs:
   deploy:
-    # Only deploy on merge to main (not on PR open)
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
-    
     # Use the production environment
     environment: production
     
     permissions:
       contents: read
       id-token: write
+      # Required for private repos and submodules
+      actions: read
 
     runs-on: ubuntu-latest
 
@@ -34,6 +29,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # Configure git to use token for submodules
+          persist-credentials: true
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
