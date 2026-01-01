@@ -28,12 +28,15 @@ WORKDIR /app
 # Copy everything first (needed for submodules and local dependencies)
 COPY . .
 
-# Submodules should already be cloned during checkout, but ensure they're initialized
-# (This is a no-op if already cloned, but ensures they're available)
-RUN git submodule update --init --recursive || true
+# Submodules are already cloned during checkout, so they're copied as directories
+# No need to run git submodule update (and .git is excluded anyway)
+
+# Configure Poetry to not require package metadata validation
+RUN poetry config virtualenvs.create false
 
 # Install dependencies (use --no-root to skip building the package itself)
-RUN poetry install --no-dev --no-root && rm -rf $POETRY_CACHE_DIR
+# Also use --no-cache to avoid cache issues
+RUN poetry install --no-dev --no-root --no-cache && rm -rf $POETRY_CACHE_DIR
 
 # Download NLTK data (punkt_tab) - this is required by the app
 RUN poetry run python -c "import nltk; nltk.download('punkt_tab')"
