@@ -1,0 +1,69 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  SERVICE_NAME: ${{ secrets.GCP_SERVICE_NAME }}
+  REGION: ${{ secrets.GCP_REGION }}
+  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REGISTRY_REPO }}
+
+jobs:
+  deploy:
+    # Only deploy on merge to main (not on PR open)
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    
+    # Use the production environment
+    environment: production
+    
+    permissions:
+      contents: read
+      id-token: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker to use gcloud as a credential helper
+        run: |
+          gcloud auth configure-docker $REGION-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}"
+          docker build -t $IMAGE_TAG .
+          docker tag $IMAGE_TAG $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:latest
+
+      - name: Push Docker image
+        run: |
+          IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}"
+          docker push $IMAGE_TAG
+          docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}"
+          gcloud run deploy $SERVICE_NAME \
+            --image $IMAGE_TAG \
+            --region $REGION \
+            --platform managed
+
