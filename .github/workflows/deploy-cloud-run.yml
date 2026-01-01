@@ -56,16 +56,34 @@ jobs:
           docker push $IMAGE_TAG
           docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:latest
 
-      - name: Deploy to Cloud Run
+      - name: Deploy to Cloud Run  
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.CLOUD_RUN_ENV_FILE }}
         run: |
           IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}"
           
-          # Create env vars file for Cloud Run
-          cat > /tmp/env-vars.yaml << 'EOF'
-          WORKERS: "1"
-          ENV_FILE: |
-            ${{ secrets.CLOUD_RUN_ENV_FILE }}
-          EOF
+          # Create a temporary file with the ENV_FILE content
+          printf '%s' "$ENV_FILE_CONTENT" > /tmp/env_content.txt
+          
+          # Read the file and create YAML with proper quoting
+          python3 << 'PYEOF'
+          import yaml
+          import os
+          
+          # Read ENV_FILE content
+          with open('/tmp/env_content.txt', 'r') as f:
+              env_file_content = f.read()
+          
+          # Create env vars dictionary
+          env_vars = {
+              'WORKERS': '1',
+              'ENV_FILE': env_file_content
+          }
+          
+          # Write properly formatted YAML
+          with open('/tmp/env-vars.yaml', 'w') as f:
+              yaml.dump(env_vars, f, default_flow_style=False, allow_unicode=True)
+          PYEOF
           
           gcloud run deploy $SERVICE_NAME \
             --image $IMAGE_TAG \
