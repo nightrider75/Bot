@@ -59,6 +59,14 @@ jobs:
       - name: Deploy to Cloud Run
         run: |
           IMAGE_TAG="$REGION-docker.pkg.dev/$PROJECT_ID/$REPOSITORY/$SERVICE_NAME:${{ github.sha }}"
+          
+          # Create env vars file for Cloud Run
+          cat > /tmp/env-vars.yaml << 'EOF'
+          WORKERS: "1"
+          ENV_FILE: |
+            ${{ secrets.CLOUD_RUN_ENV_FILE }}
+          EOF
+          
           gcloud run deploy $SERVICE_NAME \
             --image $IMAGE_TAG \
             --region $REGION \
@@ -70,7 +78,7 @@ jobs:
             --min-instances 0 \
             --max-instances 10 \
             --allow-unauthenticated \
-            --set-env-vars "WORKERS=1,ENV_FILE=${{ secrets.CLOUD_RUN_ENV_FILE }}"
+            --env-vars-file /tmp/env-vars.yaml
 
       - name: Post Authenticate to Google Cloud
         if: success()
