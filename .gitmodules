@@ -1,0 +1,6 @@
+[submodule "deps/bot-engine"]
+	path = deps/bot-engine
+	url = https://github.com/nightrider75/bot-engine.git
+[submodule "deps/flows-test"]
+	path = deps/flows-test
+	url = https://github.com/nightrider75/flows-test.git

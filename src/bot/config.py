@@ -151,7 +151,7 @@ class Settings(BaseSettings):
     openapi_url: str = "/docs_api"
     openapi_url: str = "/docs_api"
     log_level: str = "DEBUG"
-    cors_origins: list[str] = ["http://localhost", "*.amplifyapp.com"]
+    cors_origins: list[str] = ["*"]
     host_id: str = "unknown"
 
     auth_username: str

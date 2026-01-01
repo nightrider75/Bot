@@ -42,3 +42,4 @@ poetry run alembic upgrade head
 poetry run alembic revision --autogenerate -m "description of changes"
 poetry run alembic upgrade head
 ```
+# Bot
