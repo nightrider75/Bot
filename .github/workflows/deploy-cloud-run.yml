@@ -28,8 +28,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          # Configure git to use token for submodules
+          submodules: recursive
+          token: ${{ secrets.GH_PAT }}
           persist-credentials: true
 
       - name: Authenticate to Google Cloud
