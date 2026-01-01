@@ -28,7 +28,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           token: ${{ secrets.GITHUB_TOKEN }}
           # Configure git to use token for submodules
           persist-credentials: true
