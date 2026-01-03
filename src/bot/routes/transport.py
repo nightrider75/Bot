@@ -50,9 +50,6 @@ class WebRTCOfferRequest(BaseModel):
 
     sdp: str = Field(..., description="The SDP offer from the client")
     type: str = Field(..., description="The SDP type (usually 'offer')")
-    pc_id: Optional[str] = Field(
-        default=None, description="Optional peer connection ID for renegotiation"
-    )
     user_id: Optional[str] = Field(
         default="webrtc_user", description="User ID for the session"
     )
@@ -62,6 +59,13 @@ class WebRTCOfferRequest(BaseModel):
     language: Optional[str] = Field(
         default=None,
         description="Optional language code for multilingual support (e.g., 'hi' for Hindi, 'de' for German). When set, the bot will respond in this language.",
+    )
+    pc_id: Optional[str] = Field(
+        default=None, description="Optional peer connection ID for renegotiation"
+    )
+    force_relay: Optional[bool] = Field(
+        default=False,
+        description="When true, instruct the client to prefer TURN relay-only to avoid NAT issues.",
     )
 
 
@@ -496,6 +500,8 @@ async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
             # Get query parameters
             query_params = dict(websocket.query_params)
             user_id = query_params.get("user_id", "test_user")
+            voice_id = query_params.get("voice_id")
+            language = query_params.get("language")
 
             # Create stream configuration
             stream_config = StreamConfig(
@@ -514,6 +520,8 @@ async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
                 stream_config=stream_config,
                 connection=websocket,
                 bot_identifier=bot_id,
+                voice_id_override=voice_id,
+                language_override=language,
             )
 
         except Exception as e:
@@ -523,33 +531,48 @@ async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
 
 # WebRTC INTEGRATION
 
-# Configure ICE servers with both STUN and TURN for reliable NAT traversal
-# STUN server helps discover public IP addresses
-# TURN server relays traffic when direct peer-to-peer connection fails
-ice_servers = [
-    IceServer(
-        urls="stun:stun.l.google.com:19302",
-    ),
-    # Try multiple TURN servers for reliability
-    IceServer(
-        urls="turn:openrelay.metered.ca:80",
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-    IceServer(
-        urls="turn:openrelay.metered.ca:443",
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-    IceServer(
-        urls="turn:openrelay.metered.ca:443?transport=tcp",
-        username="openrelayproject",
-        credential="openrelayproject",
-    ),
-]
+# NOTE: TURN is required for stable connectivity in production (NAT / corporate networks).
+# We keep a safe default STUN server, but TURN must be supplied via env in real deployments.
+def _get_webrtc_ice_servers() -> list[IceServer]:
+    """Build ICE server list from settings.
+
+    Env format:
+      WEBRTC_ICE_SERVERS=stun:stun.l.google.com:19302,turn:turn.example.com:3478?transport=udp
+      WEBRTC_TURN_USERNAME=...
+      WEBRTC_TURN_CREDENTIAL=...
+
+    If TURN creds are missing, TURN urls (if any) will be included without auth.
+    """
+    import os
+
+    raw = os.getenv("WEBRTC_ICE_SERVERS", "stun:stun.l.google.com:19302")
+    urls = [u.strip() for u in raw.split(",") if u.strip()]
+    turn_username = os.getenv("WEBRTC_TURN_USERNAME")
+    turn_credential = os.getenv("WEBRTC_TURN_CREDENTIAL")
+
+    servers: list[IceServer] = []
+    for u in urls:
+        if u.startswith("turn:") or u.startswith("turns:"):
+            if turn_username and turn_credential:
+                servers.append(
+                    IceServer(urls=u, username=turn_username, credential=turn_credential)
+                )
+            else:
+                servers.append(IceServer(urls=u))
+        else:
+            servers.append(IceServer(urls=u))
+    return servers
+
+
+ice_servers = _get_webrtc_ice_servers()
 
 # Store connections by pc_id
 connections_map: Dict[str, SmallWebRTCConnection] = {}
+
+
+class WebRTCIceCandidateRequest(BaseModel):
+    pc_id: str
+    candidate: dict
 
 
 @router.post("/{bot_id}/webrtc/offer")
@@ -562,6 +585,8 @@ async def offer(
 
     with logger.contextualize(bot_id=bot_id, session_id=session_id, transport="webrtc"):
         logger.info(f"WebRTC offer received for user: {user_id}")
+        if request.force_relay:
+            logger.info("Client requested force_relay=true")
 
         if pc_id and pc_id in connections_map:
             connection = connections_map[pc_id]
@@ -631,7 +656,43 @@ async def offer(
         # Updating the peer connection inside the map
         connections_map[answer["pc_id"]] = connection
 
+        # Helpful hint for clients (optional): include recommended RTCConfiguration.
+        # Clients that don't use this field can ignore it.
+        answer["rtc_config"] = {
+            "iceServers": [
+                {
+                    "urls": s.urls,
+                    **({"username": getattr(s, "username", None)} if getattr(s, "username", None) else {}),
+                    **(
+                        {"credential": getattr(s, "credential", None)}
+                        if getattr(s, "credential", None)
+                        else {}
+                    ),
+                }
+                for s in ice_servers
+            ],
+            **({"iceTransportPolicy": "relay"} if request.force_relay else {}),
+        }
+
         return answer
+
+
+@router.post("/{bot_id}/webrtc/ice")
+async def add_ice_candidate(request: WebRTCIceCandidateRequest, bot_id: UUID):
+    """Accept trickle ICE candidates from the browser and add them to the server-side peer connection."""
+    pc_id = request.pc_id
+    with logger.contextualize(bot_id=bot_id, transport="webrtc", pc_id=pc_id):
+        connection = connections_map.get(pc_id)
+        if not connection:
+            logger.warning("ICE candidate received for unknown pc_id")
+            return {"ok": False, "reason": "unknown_pc_id"}
+
+        try:
+            await connection.add_ice_candidate(request.candidate)
+            return {"ok": True}
+        except Exception as e:
+            logger.exception(f"Failed to add ICE candidate: {e}")
+            return {"ok": False, "reason": "error"}
 
 
 @router.websocket("/{bot_id}/asterisk/ws")

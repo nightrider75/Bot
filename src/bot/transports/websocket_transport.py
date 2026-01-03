@@ -29,21 +29,17 @@ class WebSocketFrameSerializer(FrameSerializer):
 
     def _load_protobuf(self):
         """Load the protobuf Frame type from bot-engine."""
-        try:
-            # Import from bot-engine protobuf definitions
-            from bot_engine.frames.protobufs import frames_pb2
-
-            self._frame_type = frames_pb2.Frame
-            self._audio_type = frames_pb2.AudioRawFrame
-            logger.info("Loaded protobuf from bot-engine")
-            return
-        except (ImportError, Exception) as e:
-            logger.warning(
-                f"Could not load bot-engine protobuf: {e}, using fallback"
-            )
-            # Fallback: Create a simple protobuf message factory
-            self._frame_type = self._create_frame_type()
-            self._audio_type = None  # Simple frame doesn't have separate audio type
+        # NOTE:
+        # The checked-in/generated `frames_pb2.py` currently fails at import-time with:
+        #   TypeError: Couldn't parse file content!
+        # which indicates a protobuf runtime / generated-code mismatch.
+        # Until that is fixed, we force the binary fallback format to keep the
+        # WebSocket transport usable from browsers.
+        self._frame_type = None
+        self._audio_type = None
+        logger.warning(
+            "Protobuf framing is disabled; using binary fallback framing for WebSocket audio"
+        )
 
     def _create_frame_type(self):
         """Create a simple frame type for testing."""
