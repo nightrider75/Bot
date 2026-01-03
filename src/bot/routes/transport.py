@@ -523,10 +523,18 @@ async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
 
 # WebRTC INTEGRATION
 
+# Configure ICE servers with both STUN and TURN for reliable NAT traversal
+# STUN server helps discover public IP addresses
+# TURN server relays traffic when direct peer-to-peer connection fails
 ice_servers = [
     IceServer(
         urls="stun:stun.l.google.com:19302",
-    )
+    ),
+    IceServer(
+        urls="turn:openrelay.metered.ca:80",
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
 ]
 
 # Store connections by pc_id
