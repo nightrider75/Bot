@@ -49,7 +49,7 @@ logs/
 Thumbs.db
 
 # Data folders (if not needed in container)
-data/
+# data/  # COMMENTED OUT - We need the bot JSON files in data/bots/, data/configs/, data/nodes/
 bot-orchestration-data/
 
 # Documentation
