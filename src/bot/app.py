@@ -110,6 +110,7 @@ async def demo_page():
     return FileResponse(STATIC_DIR / "demo.html")
 
 
+
 # Mount static files if directory exists
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
