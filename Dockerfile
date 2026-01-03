@@ -37,8 +37,9 @@ RUN poetry config virtualenvs.create false
 # Update lock file if pyproject.toml changed (regenerate lock file to sync metadata)
 RUN poetry lock || true
 
-# Install dependencies (use --only main instead of deprecated --no-dev, --no-root to skip building the package)
-RUN poetry install --only main --no-root && rm -rf $POETRY_CACHE_DIR
+# Install dependencies AND the bot package itself (removed --no-root flag)
+# This ensures the 'bot' module is installed and the 'app' script entry point works
+RUN poetry install --only main && rm -rf $POETRY_CACHE_DIR
 
 # Download NLTK data (punkt_tab) - this is required by the app
 RUN poetry run python -c "import nltk; nltk.download('punkt_tab')"
