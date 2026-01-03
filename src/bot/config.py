@@ -149,7 +149,6 @@ class Settings(BaseSettings):
     port: int = 8080
     base_url_domain: str = "localhost:8000"
     openapi_url: str = "/docs_api"
-    openapi_url: str = "/docs_api"
     log_level: str = "DEBUG"
     cors_origins: list[str] = ["*"]
     host_id: str = "unknown"
@@ -187,4 +186,5 @@ class Settings(BaseSettings):
         case_sensitive = False
 
 
+# Load settings with environment variable priority
 settings = Settings()

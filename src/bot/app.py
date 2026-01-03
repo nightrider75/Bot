@@ -116,17 +116,29 @@ if STATIC_DIR.exists():
 
 
 def main():
-    # Ensure we're using the PORT from environment if set by Cloud Run
-    import os
-    port = int(os.environ.get('PORT', settings.port))
-    workers = settings.workers
+    """Start the uvicorn server.
     
-    logger.info(f"Starting bot orchestration Service...")
-    logger.info(f"Environment PORT={os.environ.get('PORT', 'not set')}")
-    logger.info(f"Settings port={settings.port}")
-    logger.info(f"Using port={port}")
+    Reads PORT from environment variable (set by Cloud Run) or falls back to settings.port.
+    Always binds to 0.0.0.0 to accept external connections.
+    """
+    import os
+    
+    # Cloud Run sets PORT environment variable - we must use it
+    # Environment variables take precedence over settings
+    port = int(os.environ.get('PORT', settings.port))
+    workers = int(os.environ.get('WORKERS', settings.workers))
+    
+    logger.info("="*60)
+    logger.info("Starting Bot Orchestration Service")
+    logger.info("="*60)
+    logger.info(f"Environment PORT: {os.environ.get('PORT', 'not set')}")
+    logger.info(f"Environment WORKERS: {os.environ.get('WORKERS', 'not set')}")
+    logger.info(f"Settings port: {settings.port}")
+    logger.info(f"Settings workers: {settings.workers}")
+    logger.info(f"Using port: {port}")
+    logger.info(f"Using workers: {workers}")
     logger.info(f"Server will listen on 0.0.0.0:{port}")
-    logger.info(f"Workers: {workers}")
+    logger.info("="*60)
     
     try:
         uvicorn.run(
@@ -134,6 +146,7 @@ def main():
             host="0.0.0.0",
             port=port,
             workers=workers,
+            log_level=settings.log_level.lower(),
         )
     except Exception as e:
         logger.exception(f"Failed to start server: {e}")

@@ -225,5 +225,4 @@ __marimo__/
 .DS_Store
 
 # Data folder
-data/
 bot-orchestration-data/

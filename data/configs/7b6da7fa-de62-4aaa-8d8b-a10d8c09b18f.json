@@ -1,0 +1,83 @@
+{
+  "bot_identifier": "7b6da7fa-de62-4aaa-8d8b-a10d8c09b18f",
+  "pipeline_config": {
+    "audio_recording": true,
+    "initial_audio_id": null,
+    "initial_audio_rate": null,
+    "initial_audio_phrase": "Hello! Thank you for contacting customer support. How can I help you today?",
+    "llm_aggregation_timeout": 0.3,
+    "user_idle_enabled": true,
+    "user_idle_timeout": 15,
+    "user_idle_retries": 3,
+    "user_idle_nudge": "Are you still there?",
+    "user_idle_goodbye": "Good bye!",
+    "user_idle_llm_nudge": null,
+    "user_idle_llm_goodbye": null,
+    "end_phrases": [
+      "good bye"
+    ],
+    "end_phrase_match_threshold": 0.8,
+    "max_ttl_enabled": false,
+    "max_ttl_timeout": 600.0,
+    "postcall_config": {
+      "gcs_pubsub_topics": [],
+      "gcs_pubsub_project_id": null,
+      "credentials": null,
+      "credentials_path": null
+    },
+    "stt_mute_strategy": []
+  },
+  "tts": {
+    "provider": "elevenlabs",
+    "model": "eleven_multilingual_v2",
+    "voice_id": "yM93hbw8Qtvdma2wCnJG",
+    "api_key": "sk_d4d6fe1e633d864ecd6307a35410e50a366dca6898f24c8a",
+    "region": null,
+    "credentials_path": null,
+    "pronounciation_mapping": {},
+    "pronounciation_mapping_case_sensitive": false,
+    "enable_number_normalization": true,
+    "number_normalization_language": "en",
+    "language": "en",
+    "endpoint": null,
+    "speed": null,
+    "expressive_level": null
+  },
+  "stt": {
+    "provider": "deepgram",
+    "model": "nova-2",
+    "api_key": "af217c90c6016fea7fe7046cf6357a3d34b6d85e",
+    "credentials_path": null,
+    "language": [
+      "en-US"
+    ],
+    "region": null,
+    "endpoint": null,
+    "phrase_list": null
+  },
+  "llm": {
+    "provider": "openai",
+    "model": "gpt-4o-mini",
+    "temperature": null,
+    "api_key": "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",
+    "endpoint": null
+  },
+  "transport": {
+    "provider": null,
+    "vad_params": {
+      "enabled": true,
+      "start_secs": 0.4,
+      "stop_secs": 0.8,
+      "confidence_threshold": 0.85,
+      "volume_threshold": 0.65
+    },
+    "session_timeout": 3
+  },
+  "file_store": {
+    "file_store_type": "local",
+    "account_url": null,
+    "credentials_path": null,
+    "store_location": "bot-orchestration-data",
+    "store_path_prefix": "yw"
+  }
+}

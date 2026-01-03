@@ -75,7 +75,10 @@ jobs:
               env_file_content = f.read()
           
           # Create env vars dictionary
+          # Note: Cloud Run automatically sets PORT=8080 based on --port flag
+          # We explicitly set it here to ensure consistency
           env_vars = {
+              'PORT': '8080',
               'WORKERS': '1',
               'ENV_FILE': env_file_content
           }

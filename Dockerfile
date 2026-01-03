@@ -49,17 +49,31 @@ EXPOSE 8080
 # Create a startup script that ensures .env is created before Python runs
 RUN echo '#!/bin/sh\n\
 set -e\n\
+echo "[STARTUP] ========================================"\n\
 echo "[STARTUP] Starting bot orchestration service..."\n\
-echo "[STARTUP] PORT=${PORT}"\n\
-echo "[STARTUP] WORKERS=${WORKERS}"\n\
+echo "[STARTUP] ========================================"\n\
+echo "[STARTUP] PORT=${PORT:-NOT_SET}"\n\
+echo "[STARTUP] WORKERS=${WORKERS:-NOT_SET}"\n\
+\n\
+# Ensure PORT is set (Cloud Run should set this, but default to 8080)\n\
+export PORT=${PORT:-8080}\n\
+export WORKERS=${WORKERS:-1}\n\
+\n\
+echo "[STARTUP] Using PORT=$PORT"\n\
+echo "[STARTUP] Using WORKERS=$WORKERS"\n\
+\n\
 if [ -n "$ENV_FILE" ]; then\n\
   echo "[STARTUP] Creating .env file from ENV_FILE environment variable"\n\
   printf "%s" "$ENV_FILE" > /app/.env\n\
   echo "[STARTUP] .env file created successfully"\n\
+  echo "[STARTUP] .env file size: $(wc -c < /app/.env) bytes"\n\
 else\n\
   echo "[STARTUP] No ENV_FILE provided, using existing .env or environment variables"\n\
 fi\n\
+\n\
+echo "[STARTUP] ========================================"\n\
 echo "[STARTUP] Launching application..."\n\
+echo "[STARTUP] ========================================"\n\
 exec poetry run app\n\
 ' > /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
