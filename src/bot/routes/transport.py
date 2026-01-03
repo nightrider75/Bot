@@ -530,8 +530,19 @@ ice_servers = [
     IceServer(
         urls="stun:stun.l.google.com:19302",
     ),
+    # Try multiple TURN servers for reliability
     IceServer(
         urls="turn:openrelay.metered.ca:80",
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+    IceServer(
+        urls="turn:openrelay.metered.ca:443",
+        username="openrelayproject",
+        credential="openrelayproject",
+    ),
+    IceServer(
+        urls="turn:openrelay.metered.ca:443?transport=tcp",
         username="openrelayproject",
         credential="openrelayproject",
     ),
