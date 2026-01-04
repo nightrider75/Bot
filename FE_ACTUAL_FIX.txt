@@ -1,0 +1,13 @@
+// CHANGE THIS LINE (around line 70):
+// OLD:
+const authToken = btoa("admin:admin");
+qs.set("auth_token", authToken);
+
+// NEW - Remove the padding '=' characters:
+const authToken = btoa("admin:admin").replace(/=/g, '');
+qs.set("auth_token", authToken);
+
+// OR even better - don't use query param, just remove the whole auth_token thing:
+// Remove these lines:
+const authToken = btoa("admin:admin");
+qs.set("auth_token", authToken);

@@ -507,6 +507,11 @@ def verify_websocket_auth(websocket: WebSocket) -> bool:
         
         if auth_token:
             try:
+                # Handle base64 padding issues - add back padding if needed
+                missing_padding = len(auth_token) % 4
+                if missing_padding:
+                    auth_token += '=' * (4 - missing_padding)
+                    
                 decoded_bytes = base64.b64decode(auth_token)
                 decoded_credentials = decoded_bytes.decode("utf-8")
                 username, password = decoded_credentials.split(":", 1)
@@ -514,6 +519,8 @@ def verify_websocket_auth(websocket: WebSocket) -> bool:
                 if username == settings.auth_username and password == settings.auth_password:
                     logger.debug("WebSocket authenticated via query param")
                     return True
+                else:
+                    logger.warning(f"Invalid credentials in auth_token: {username}")
             except Exception as e:
                 logger.warning(f"Invalid auth_token in query params: {e}")
         
