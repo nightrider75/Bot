@@ -1,7 +1,8 @@
 from typing import Dict, Optional
 from uuid import UUID, uuid4
+import base64
 
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, WebSocket
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import PlainTextResponse, Response
 from loguru import logger
 from plivo import RestClient as PlivoClient
@@ -482,19 +483,64 @@ async def twilio_websocket_endpoint_sip(websocket: WebSocket, bot_id: UUID):
 # BOT WEBSOCKET INTEGRATION
 
 
+def verify_websocket_auth(websocket: WebSocket) -> bool:
+    """Verify Basic Auth credentials from WebSocket headers.
+    
+    Args:
+        websocket: The WebSocket connection
+        
+    Returns:
+        True if authentication is valid, False otherwise
+    """
+    try:
+        # Get Authorization header
+        auth_header = websocket.headers.get("authorization", "")
+        
+        if not auth_header:
+            logger.warning("No authorization header in WebSocket request")
+            return False
+            
+        # Parse Basic Auth
+        if not auth_header.startswith("Basic "):
+            logger.warning(f"Invalid authorization header format: {auth_header[:20]}")
+            return False
+            
+        # Decode credentials
+        encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
+        decoded_bytes = base64.b64decode(encoded_credentials)
+        decoded_credentials = decoded_bytes.decode("utf-8")
+        username, password = decoded_credentials.split(":", 1)
+        
+        # Verify credentials
+        if username != settings.auth_username or password != settings.auth_password:
+            logger.warning(f"Invalid credentials for WebSocket: username={username}")
+            return False
+            
+        return True
+    except Exception as e:
+        logger.error(f"Error verifying WebSocket auth: {e}")
+        return False
+
+
 @router.websocket("/{bot_id}/bot/ws")
 async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
     """
     WebSocket endpoint for local bot testing using bot transport.
     This endpoint accepts WebSocket connections with protobuf-encoded audio frames.
     """
+    # Verify authentication before accepting connection
+    if not verify_websocket_auth(websocket):
+        logger.warning(f"WebSocket authentication failed for bot_id={bot_id}")
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+    
     await websocket.accept()
     session_id = uuid4()
 
     with logger.contextualize(
         bot_id=bot_id, session_id=session_id, transport="bot_websocket"
     ):
-        logger.info("Bot WebSocket connection established")
+        logger.info("Bot WebSocket connection established with authentication")
 
         try:
             # Get query parameters
