@@ -558,11 +558,12 @@ async def bot_websocket_endpoint(websocket: WebSocket, bot_id: UUID):
     WebSocket endpoint for local bot testing using bot transport.
     This endpoint accepts WebSocket connections with protobuf-encoded audio frames.
     """
-    # Verify authentication before accepting connection
-    if not verify_websocket_auth(websocket):
-        logger.warning(f"WebSocket authentication failed for bot_id={bot_id}")
-        await websocket.close(code=1008, reason="Authentication required")
-        return
+    # Skip auth verification for WebSocket (public demo endpoint)
+    # Note: Re-enable this for production with proper token-based auth
+    # if not verify_websocket_auth(websocket):
+    #     logger.warning(f"WebSocket authentication failed for bot_id={bot_id}")
+    #     await websocket.close(code=1008, reason="Authentication required")
+    #     return
     
     await websocket.accept()
     session_id = uuid4()
