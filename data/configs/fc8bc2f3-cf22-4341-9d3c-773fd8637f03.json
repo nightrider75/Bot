@@ -25,7 +25,7 @@
       "credentials": null,
       "credentials_path": null
     },
-    "stt_mute_strategy": []
+    "stt_mute_strategy": ["mute_until_first_bot_complete"]
   },
   "tts": {
     "provider": "elevenlabs",
