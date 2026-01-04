@@ -484,39 +484,62 @@ async def twilio_websocket_endpoint_sip(websocket: WebSocket, bot_id: UUID):
 
 
 def verify_websocket_auth(websocket: WebSocket) -> bool:
-    """Verify Basic Auth credentials from WebSocket headers.
+    """Verify auth credentials from WebSocket query parameters or headers.
+    
+    WebSocket protocol has issues with Authorization headers during handshake.
+    We support both query params (auth_token) and headers for flexibility.
     
     Args:
         websocket: The WebSocket connection
         
     Returns:
-        True if authentication is valid, False otherwise
+        True if authentication is valid or auth is disabled, False otherwise
     """
     try:
-        # Get Authorization header
+        # If auth is not configured, allow all connections
+        if not settings.auth_username or not settings.auth_password:
+            logger.debug("Auth not configured, allowing WebSocket connection")
+            return True
+        
+        # Method 1: Check query parameter (auth_token)
+        query_params = dict(websocket.query_params)
+        auth_token = query_params.get("auth_token")
+        
+        if auth_token:
+            try:
+                decoded_bytes = base64.b64decode(auth_token)
+                decoded_credentials = decoded_bytes.decode("utf-8")
+                username, password = decoded_credentials.split(":", 1)
+                
+                if username == settings.auth_username and password == settings.auth_password:
+                    logger.debug("WebSocket authenticated via query param")
+                    return True
+            except Exception as e:
+                logger.warning(f"Invalid auth_token in query params: {e}")
+        
+        # Method 2: Check Authorization header (may not work in all cases)
         auth_header = websocket.headers.get("authorization", "")
         
-        if not auth_header:
-            logger.warning("No authorization header in WebSocket request")
-            return False
-            
-        # Parse Basic Auth
-        if not auth_header.startswith("Basic "):
-            logger.warning(f"Invalid authorization header format: {auth_header[:20]}")
-            return False
-            
-        # Decode credentials
-        encoded_credentials = auth_header[6:]  # Remove "Basic " prefix
-        decoded_bytes = base64.b64decode(encoded_credentials)
-        decoded_credentials = decoded_bytes.decode("utf-8")
-        username, password = decoded_credentials.split(":", 1)
+        if auth_header and auth_header.startswith("Basic "):
+            try:
+                encoded_credentials = auth_header[6:]
+                decoded_bytes = base64.b64decode(encoded_credentials)
+                decoded_credentials = decoded_bytes.decode("utf-8")
+                username, password = decoded_credentials.split(":", 1)
+                
+                if username == settings.auth_username and password == settings.auth_password:
+                    logger.debug("WebSocket authenticated via Authorization header")
+                    return True
+                else:
+                    logger.warning(f"Invalid credentials for WebSocket: username={username}")
+                    return False
+            except Exception as e:
+                logger.warning(f"Error parsing Authorization header: {e}")
         
-        # Verify credentials
-        if username != settings.auth_username or password != settings.auth_password:
-            logger.warning(f"Invalid credentials for WebSocket: username={username}")
-            return False
-            
-        return True
+        # No valid auth found
+        logger.warning("No valid authentication provided for WebSocket")
+        return False
+        
     except Exception as e:
         logger.error(f"Error verifying WebSocket auth: {e}")
         return False
