@@ -209,6 +209,10 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# Google Cloud credentials
+credentials/
+*.json
+
 # Marimo
 marimo/_static/
 marimo/_lsp/

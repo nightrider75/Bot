@@ -28,17 +28,17 @@
     "stt_mute_strategy": ["mute_until_first_bot_complete"]
   },
   "tts": {
-    "provider": "elevenlabs",
-    "model": "eleven_multilingual_v2",
-    "voice_id": "yM93hbw8Qtvdma2wCnJG",
-    "api_key": "sk_d4d6fe1e633d864ecd6307a35410e50a366dca6898f24c8a",
+    "provider": "googletts",
+    "model": null,
+    "voice_id": "en-US-Chirp3-HD-Aoede",
+    "api_key": null,
     "region": null,
-    "credentials_path": null,
+    "credentials_path": "credentials/google-tts-credentials.json",
     "pronounciation_mapping": {},
     "pronounciation_mapping_case_sensitive": false,
     "enable_number_normalization": true,
     "number_normalization_language": "en",
-    "language": "en",
+    "language": "en-US",
     "endpoint": null,
     "speed": null,
     "expressive_level": null
@@ -46,7 +46,7 @@
   "stt": {
     "provider": "deepgram",
     "model": "nova-2",
-    "api_key": "af217c90c6016fea7fe7046cf6357a3d34b6d85e",
+    "api_key": "ad9ef1ede98417290bdccf6feb0969c6031f6e1c",
     "credentials_path": null,
     "language": [
       "en-US"

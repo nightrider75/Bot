@@ -12,8 +12,9 @@ from pathlib import Path
 import nltk
 import uvicorn
 from fastapi import FastAPI, Depends
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
@@ -22,6 +23,7 @@ from bot.auth import get_current_username
 from bot.config import settings
 from bot.routes.lib import router
 from bot.routes.platform.lib import router as platform_router
+from bot.routes.contact_form import router as contact_form_router
 
 # Log early to show module is loading
 import os
@@ -87,6 +89,74 @@ app.include_router(
     tags=["Platform"],
     dependencies=[Depends(get_current_username)],
 )
+app.include_router(contact_form_router, tags=["Contact Form"])
+
+
+# Custom exception handler for validation errors
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    """Custom handler for validation errors that returns clear, frontend-friendly messages."""
+    
+    # Get the first error
+    if exc.errors():
+        error = exc.errors()[0]
+        field = error.get("loc", [])[-1] if error.get("loc") else "unknown"
+        msg = error.get("msg", "Validation error")
+        input_val = error.get("input", "")
+        
+        # Format phone number errors
+        if field == "phone":
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "success": False,
+                    "error": "❌ Invalid phone number",
+                    "field": "phone",
+                    "provided": str(input_val),
+                    "message": "Phone number must be exactly 10 digits",
+                    "accepted_formats": [
+                        "✓ Plain: 1234567890",
+                        "✓ With dashes: 123-456-7890",
+                        "✓ With parentheses: (123) 456-7890"
+                    ]
+                }
+            )
+        
+        # Format email errors
+        elif field == "email":
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "success": False,
+                    "error": "❌ Invalid email address",
+                    "field": "email",
+                    "provided": str(input_val),
+                    "message": "Email must be in valid format: example@domain.com",
+                    "example": "john@example.com"
+                }
+            )
+        
+        # Format required field errors
+        elif field in ["firstName", "lastName", "message"]:
+            return JSONResponse(
+                status_code=422,
+                content={
+                    "success": False,
+                    "error": f"❌ {field} is required",
+                    "field": field,
+                    "message": f"{field} cannot be empty"
+                }
+            )
+    
+    # Default fallback
+    return JSONResponse(
+        status_code=422,
+        content={
+            "success": False,
+            "error": "❌ Validation error",
+            "message": "Please check your form data and try again"
+        }
+    )
 
 
 @app.get("/health", include_in_schema=False)

@@ -17,6 +17,7 @@ from bot_engine.frames.frames import (
 
 from bot.bot_hub.hub import BotSession
 from bot.bot_pipeline.pipeline import BotPipeline
+from bot.bot_pipeline.language_config import LanguageConfig
 from bot.models.chat import (
     ChatCloseReason,
     ChatConversationCreate,
@@ -185,25 +186,43 @@ async def run_bot(
     bot_config = await bot.get_config()
     logger.debug("Bot configuration created successfully")
 
+    # Initialize language_info to None (will be set if language_override is provided)
+    language_info = None
+    
     # Apply voice_id override if provided (for accent selection)
-    if voice_id_override:
+    # NOTE: Only apply if using ElevenLabs TTS (not Google TTS)
+    if voice_id_override and bot_config.tts.provider.value != "googletts":
         logger.info(f"Applying voice_id override: {voice_id_override}")
         bot_config.tts.voice_id = voice_id_override
+    elif voice_id_override and bot_config.tts.provider.value == "googletts":
+        logger.warning(
+            f"Ignoring ElevenLabs voice_id override '{voice_id_override}' because Google TTS is configured. "
+            f"Using configured Google voice: {bot_config.tts.voice_id}"
+        )
 
     # Apply language override if provided (for multilingual support)
-    language_info = None
-    if language_override and language_override in LANGUAGE_MAP:
-        language_info = LANGUAGE_MAP[language_override]
-        logger.info(
-            f"Applying language override: {language_override} ({language_info['name']})"
-        )
-        # Override STT language for proper transcription
-        bot_config.stt.language = [language_info["stt_code"]]
-        # Override TTS language
-        bot_config.tts.language = language_info["stt_code"]
+    if language_override:
+        logger.info(f"Applying language override: {language_override}")
         
-        # Set pre-configured greeting for instant response (no LLM delay)
-        if bot_config.pipeline_config and "greetings" in language_info:
+        # Get appropriate Google TTS voice and language code
+        google_voice_id, tts_language = LanguageConfig.get_google_voice_for_language(language_override)
+        stt_language = LanguageConfig.get_deepgram_language(language_override)
+        language_name = LanguageConfig.get_language_name(language_override)
+        
+        logger.info(f"Language: {language_name}")
+        logger.info(f"TTS Voice: {google_voice_id} (language: {tts_language})")
+        logger.info(f"STT Language: {stt_language}")
+        
+        # Apply TTS settings (overrides any previous voice_id setting)
+        bot_config.tts.voice_id = google_voice_id
+        bot_config.tts.language = tts_language
+        
+        # Apply STT settings
+        bot_config.stt.language = [stt_language]
+        
+        # Update greeting if multilingual greeting exists
+        language_info = LANGUAGE_MAP.get(language_override)
+        if language_info and bot_config.pipeline_config and "greetings" in language_info:
             # Get bot name from bot provider
             bot_data = await bot.bot_hub.bot_provider.get_bot(bot_identifier)
             bot_name = bot_data.name
@@ -212,12 +231,12 @@ async def run_bot(
                 bot_config.pipeline_config.initial_audio_phrase = greeting
                 bot_config.pipeline_config.initial_audio_id = None
                 logger.info(
-                    f"Set pre-configured greeting for {bot_name} in {language_info['name']}: {greeting}"
+                    f"Set pre-configured greeting for {bot_name} in {language_name}: {greeting}"
                 )
             else:
-                # Fallback: disable greeting if bot type not found
-                bot_config.pipeline_config.initial_audio_phrase = None
-                bot_config.pipeline_config.initial_audio_id = None
+                # Fallback: keep default greeting
+                logger.debug(f"No pre-configured greeting found for bot type: {bot_name}")
+
                 logger.warning(
                     f"No pre-configured greeting found for bot '{bot_name}' in {language_info['name']}"
                 )
