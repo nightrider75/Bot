@@ -33,7 +33,7 @@
     "voice_id": "en-US-Chirp3-HD-Aoede",
     "api_key": null,
     "region": null,
-    "credentials_path": "credentials/google-tts-credentials.json",
+    "credentials_path": "/app/credentials/google-tts-credentials.json",
     "pronounciation_mapping": {},
     "pronounciation_mapping_case_sensitive": false,
     "enable_number_normalization": true,
