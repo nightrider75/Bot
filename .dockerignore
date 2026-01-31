@@ -68,9 +68,7 @@ service-account-file.json
 *.json
 !package.json
 !package-lock.json
-!data/bots/*.json
-!data/configs/*.json
-!data/nodes/**/*.json
+
 
 # Audio files
 *.wav
