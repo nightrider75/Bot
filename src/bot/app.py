@@ -9,6 +9,10 @@ import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+# Load environment variables from .env file FIRST (before any other imports)
+from dotenv import load_dotenv
+load_dotenv()
+
 import nltk
 import uvicorn
 from fastapi import FastAPI, Depends
@@ -31,6 +35,9 @@ print(f"[STARTUP] Bot app module loading...", flush=True)
 print(f"[STARTUP] Environment PORT={os.environ.get('PORT', 'NOT SET')}", flush=True)
 print(f"[STARTUP] Settings PORT={settings.port}", flush=True)
 print(f"[STARTUP] Workers={settings.workers}", flush=True)
+print(f"[STARTUP] WEBRTC_ICE_SERVERS={os.environ.get('WEBRTC_ICE_SERVERS', 'NOT SET')}", flush=True)
+print(f"[STARTUP] WEBRTC_TURN_USERNAME={os.environ.get('WEBRTC_TURN_USERNAME', 'NOT SET')}", flush=True)
+print(f"[STARTUP] WEBRTC_TURN_CREDENTIAL={'***' if os.environ.get('WEBRTC_TURN_CREDENTIAL') else 'NOT SET'}", flush=True)
 
 nltk.download("punkt_tab")
 
