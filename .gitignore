@@ -145,7 +145,7 @@ activemq-data/
 
 # SageMath parsed files
 *.sage.py
-
+saa-s-website-ui/
 # Environments
 .env
 .envrc
@@ -158,6 +158,7 @@ env.bak/
 venv.bak/
 service-account-file.json
 .env.webrtc
+/saa-s-website-ui/
 
 # Spyder project settings
 .spyderproject
