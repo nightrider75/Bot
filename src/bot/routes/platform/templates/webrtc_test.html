@@ -488,8 +488,20 @@
             };
 
             const createSmallWebRTCConnection = async (audioTrack) => {
+                let iceServers = [];
+                try {
+                const baseUrl = getWebRTCBaseUrl();
+                    const configRes = await fetch(`${baseUrl}/api/v1/transport/${botId}/webrtc/config`);
+                    if (configRes.ok) {
+                         const config = await configRes.json();
+                         iceServers = config.iceServers || iceServers;
+                    }
+                } catch(e) {
+                    console.warn("Failed to fetch ICE config via API, falling back to empty.", e);
+                }
+
                 const config = {
-                    iceServers: [],
+                    iceServers: iceServers,
                 };
                 const pc = new RTCPeerConnection(config);
                 addPeerConnectionEventListeners(pc);

@@ -772,6 +772,25 @@ async def add_ice_candidate(request: WebRTCIceCandidateRequest, bot_id: UUID):
             return {"ok": False, "reason": "error"}
 
 
+@router.get("/{bot_id}/webrtc/config")
+async def get_rtc_config(bot_id: UUID):
+    """Get the WebRTC configuration including ICE servers."""
+    return {
+        "iceServers": [
+            {
+                "urls": s.urls,
+                **({"username": getattr(s, "username", None)} if getattr(s, "username", None) else {}),
+                **(
+                    {"credential": getattr(s, "credential", None)}
+                    if getattr(s, "credential", None)
+                    else {}
+                ),
+            }
+            for s in ice_servers
+        ]
+    }
+
+
 @router.websocket("/{bot_id}/asterisk/ws")
 async def asterisk_websocket(websocket: WebSocket, bot_id: UUID):
     websocket_params = dict(websocket.query_params)

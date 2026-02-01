@@ -508,9 +508,20 @@
                 // 1. Get Audio
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-                // 2. Setup PC
+                // 2. Fetch ICE Servers & Setup PC
+                let iceServers = [{ urls: 'stun:stun.l.google.com:19302' }];
+                try {
+                    const configRes = await fetch(`${API_BASE}/api/v1/transport/${currentBotId}/webrtc/config`);
+                    if (configRes.ok) {
+                         const config = await configRes.json();
+                         iceServers = config.iceServers || iceServers;
+                    }
+                } catch(e) {
+                    console.warn("Failed to fetch ICE config via API, falling back to default.", e);
+                }
+
                 peerConnection = new RTCPeerConnection({
-                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                    iceServers: iceServers
                 });
 
                 stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
