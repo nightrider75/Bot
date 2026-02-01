@@ -9,6 +9,7 @@ from bot.routes.transport import router as transport_router
 from bot.routes.bot_outbound_transport import (
     router as bot_outbound_transport,
 )
+from bot.routes.demo_websocket import router as demo_router
 
 router = APIRouter()
 
@@ -29,3 +30,4 @@ router.include_router(
     prefix="/bot_outbound_transport",
     tags=["Bot Outbound Compatible Transport"],
 )
+router.include_router(demo_router, tags=["Demo WebSocket"])
