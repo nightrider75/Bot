@@ -37,6 +37,7 @@ from bot.bot_pipeline.transport_provider import TransportProvider
 from bot.bot_pipeline.tts_provider import SynthesizerProvider
 from bot.config import settings
 from bot.deps import AsyncSessionLocal
+from bot.processors.interruption_converter import InterruptionConverterProcessor
 from bot.store.asset_store.postgres import PostgresAssetStore
 from bot.store.file_store.store import FileStore
 from bot.types import BotConfig, StreamConfig
@@ -75,6 +76,11 @@ class BotPipeline(BaseObject):
         self._register_event_handler("user_idle_disconnect")
 
         pipeline_components.append(self.transport.input())
+
+        # Add interruption converter processor to handle user speech interruptions
+        # This converts UserStartedSpeakingFrame to InterruptionTaskFrame for TTS interruption
+        self.interruption_converter = InterruptionConverterProcessor()
+        pipeline_components.append(self.interruption_converter)
 
         if config.pipeline_config.user_idle_enabled:
 

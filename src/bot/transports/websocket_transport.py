@@ -1,9 +1,10 @@
 """WebSocket transport implementation for local bot testing.
 
 This module provides a WebSocket-based transport for testing bots locally
-using protobuf serialization for audio frames.
+using protobuf serialization for audio frames and JSON for control messages.
 """
 
+import json
 import logging
 
 from bot_engine.frames.frames import (
@@ -11,6 +12,8 @@ from bot_engine.frames.frames import (
     Frame,
     InputAudioRawFrame,
     OutputAudioRawFrame,
+    UserStartedSpeakingFrame,
+    UserStoppedSpeakingFrame,
 )
 from bot_engine.serializers.base_serializer import (
     FrameSerializer,
@@ -81,12 +84,59 @@ class WebSocketFrameSerializer(FrameSerializer):
         """Convert a frame to its serialized representation."""
         if isinstance(frame, (InputAudioRawFrame, OutputAudioRawFrame, AudioRawFrame)):
             return self.serialize_audio_frame(frame)
+        
+        # Handle control frames as JSON messages
+        if isinstance(frame, UserStartedSpeakingFrame):
+            return json.dumps({
+                "type": "user_started_speaking",
+                "emulated": frame.emulated,
+                "timestamp": frame.timestamp if hasattr(frame, 'timestamp') else None
+            })
+        elif isinstance(frame, UserStoppedSpeakingFrame):
+            return json.dumps({
+                "type": "user_stopped_speaking", 
+                "emulated": frame.emulated,
+                "timestamp": frame.timestamp if hasattr(frame, 'timestamp') else None
+            })
+        
         return None
 
     async def deserialize(self, data: str | bytes) -> Frame | None:
         """Convert serialized data back to a frame object."""
         if isinstance(data, bytes):
             return self.deserialize_audio_frame(data)
+        elif isinstance(data, str):
+            # Handle JSON control messages
+            try:
+                logger.info(f"🔍 Processing JSON message from frontend: {data[:200]}")
+                msg = json.loads(data)
+                if not isinstance(msg, dict) or "type" not in msg:
+                    logger.warning(f"❌ Invalid JSON message format: {data[:100]}")
+                    return None
+                    
+                msg_type = msg.get("type")
+                logger.info(f"📨 JSON message type: {msg_type}")
+                
+                if msg_type == "user_started_speaking":
+                    logger.info("🛑 CREATING UserStartedSpeakingFrame - USER INTERRUPTING BOT!")
+                    frame = UserStartedSpeakingFrame(emulated=msg.get("emulated", False))
+                    logger.info(f"✅ Created UserStartedSpeakingFrame: {frame}")
+                    return frame
+                elif msg_type == "user_stopped_speaking":
+                    logger.info("🔕 CREATING UserStoppedSpeakingFrame")
+                    frame = UserStoppedSpeakingFrame(emulated=msg.get("emulated", False))
+                    logger.info(f"✅ Created UserStoppedSpeakingFrame: {frame}")
+                    return frame
+                else:
+                    # Unknown JSON message type - ignore
+                    logger.debug(f"❓ Ignoring unknown JSON message type: {msg_type}")
+                    return None
+                    
+            except json.JSONDecodeError as e:
+                # Invalid JSON - ignore
+                logger.warning(f"❌ Invalid JSON message: {e}, data: {data[:100]}")
+                return None
+                
         return None
 
     def serialize_audio_frame(self, frame: AudioRawFrame) -> bytes:
