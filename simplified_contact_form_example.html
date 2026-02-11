@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simplified Contact Form</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            display: none;
+        }
+        .error-input {
+            border-color: #ef4444 !important;
+        }
+        .success-message {
+            color: #10b981;
+            background-color: #ecfdf5;
+            border: 1px solid #10b981;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md mx-auto bg-white rounded-lg shadow-md p-8">
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-bold text-gray-900">Get In Touch</h2>
+            <p class="mt-2 text-sm text-gray-600">Send us a message and we'll get back to you soon!</p>
+        </div>
+
+        <div id="successMessage" class="success-message">
+            <p>✅ <strong>Thank you!</strong> Your message has been sent successfully. Our team will get back to you soon!</p>
+        </div>
+
+        <form id="contactForm" class="space-y-6">
+            <div>
+                <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                    Name <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your full name"
+                />
+                <div id="nameError" class="error-message">Name is required</div>
+            </div>
+
+            <div>
+                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                    Email <span class="text-red-500">*</span>
+                </label>
+                <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Enter your email address"
+                />
+                <div id="emailError" class="error-message">Please enter a valid email address</div>
+            </div>
+
+            <div>
+                <label for="message" class="block text-sm font-medium text-gray-700 mb-2">
+                    Message <span class="text-red-500">*</span>
+                </label>
+                <textarea
+                    id="message"
+                    name="message"
+                    rows="4"
+                    required
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Tell us how we can help you..."
+                ></textarea>
+                <div id="messageError" class="error-message">Message is required</div>
+            </div>
+
+            <button
+                type="submit"
+                id="submitBtn"
+                class="w-full bg-blue-600 text-white py-3 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-200 font-medium"
+            >
+                <span id="submitText">Send Message</span>
+                <span id="loadingText" class="hidden">Sending...</span>
+            </button>
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('contactForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Clear previous errors
+            clearErrors();
+            
+            // Get form data
+            const formData = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                message: document.getElementById('message').value.trim()
+            };
+            
+            // Basic validation
+            let hasError = false;
+            
+            if (!formData.name) {
+                showError('name', 'Name is required');
+                hasError = true;
+            }
+            
+            if (!formData.email) {
+                showError('email', 'Email is required');
+                hasError = true;
+            } else if (!isValidEmail(formData.email)) {
+                showError('email', 'Please enter a valid email address');
+                hasError = true;
+            }
+            
+            if (!formData.message) {
+                showError('message', 'Message is required');
+                hasError = true;
+            }
+            
+            if (hasError) return;
+            
+            // Show loading state
+            setLoadingState(true);
+            
+            try {
+                // Make API call - CHANGE THIS URL TO YOUR API ENDPOINT
+                const response = await fetch('/api/contact', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    // Success - show success message and reset form
+                    document.getElementById('successMessage').style.display = 'block';
+                    document.getElementById('contactForm').reset();
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    // Handle API errors
+                    if (result.field && result.message) {
+                        showError(result.field, result.message);
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Network error. Please check your connection and try again.');
+            } finally {
+                setLoadingState(false);
+            }
+        });
+        
+        function showError(field, message) {
+            const input = document.getElementById(field);
+            const error = document.getElementById(field + 'Error');
+            
+            input.classList.add('error-input');
+            error.textContent = message;
+            error.style.display = 'block';
+        }
+        
+        function clearErrors() {
+            const inputs = document.querySelectorAll('input, textarea');
+            const errors = document.querySelectorAll('.error-message');
+            
+            inputs.forEach(input => input.classList.remove('error-input'));
+            errors.forEach(error => error.style.display = 'none');
+            
+            // Hide success message
+            document.getElementById('successMessage').style.display = 'none';
+        }
+        
+        function setLoadingState(loading) {
+            const submitBtn = document.getElementById('submitBtn');
+            const submitText = document.getElementById('submitText');
+            const loadingText = document.getElementById('loadingText');
+            
+            if (loading) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                submitText.classList.add('hidden');
+                loadingText.classList.remove('hidden');
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-75', 'cursor-not-allowed');
+                submitText.classList.remove('hidden');
+                loadingText.classList.add('hidden');
+            }
+        }
+        
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // Clear errors when user starts typing
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('input', function() {
+                if (this.classList.contains('error-input')) {
+                    this.classList.remove('error-input');
+                    const error = document.getElementById(this.id + 'Error');
+                    if (error) error.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

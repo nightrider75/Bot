@@ -3,6 +3,7 @@
 This module provides endpoints for:
 - Receiving contact form submissions from the website
 - Storing submissions as JSON files locally
+- Sending email notifications to configured recipients
 - Displaying a professional web UI to view all submissions
 """
 
@@ -18,6 +19,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from loguru import logger
 from pydantic import BaseModel, EmailStr, field_validator, ValidationError
+
+from bot.services.email_service import configure_email_service, get_email_service
 
 router = APIRouter()
 
@@ -62,7 +65,7 @@ def format_validation_error(error_dict: dict) -> dict:
                 "message": "Email must be in format: example@domain.com",
                 "details": msg
             }
-    elif field in ["firstName", "lastName", "message"]:
+    elif field in ["name", "message"]:
         if "empty" in msg.lower():
             return {
                 "success": False,
@@ -81,62 +84,19 @@ def format_validation_error(error_dict: dict) -> dict:
 
 
 class ContactFormRequest(BaseModel):
-    """Contact form submission request model."""
+    """Simplified contact form submission request model."""
 
-    firstName: str
-    lastName: Optional[str] = None  # Now optional
+    name: str  # Changed from firstName to just name
     email: EmailStr
-    phone: Optional[str] = None
-    company: Optional[str] = None
     message: str
 
-    @field_validator("firstName", "message")
+    @field_validator("name", "message")
     @classmethod
     def validate_required_fields(cls, v: str, info) -> str:
         """Validate that required fields are not empty."""
         if not v or not v.strip():
             raise ValueError(f"{info.field_name} cannot be empty")
         return v.strip()
-
-    @field_validator("lastName")
-    @classmethod
-    def validate_lastName(cls, v: Optional[str]) -> Optional[str]:
-        """Validate and clean lastName field (optional)."""
-        if v:
-            return v.strip()
-        return v
-
-    @field_validator("phone")
-    @classmethod
-    def validate_phone(cls, v: Optional[str]) -> Optional[str]:
-        """Validate phone number format - MUST be exactly 10 digits if provided.
-        
-        Phone is optional, but if provided, it MUST be exactly 10 digits.
-        Accepts formats: 1234567890, 123-456-7890, (123) 456-7890, etc.
-        """
-        if not v:  # Phone is optional
-            return v
-        
-        # Remove all non-digit characters
-        phone_cleaned = v.strip()
-        digits_only = phone_cleaned.replace(" ", "").replace("-", "").replace("(", "").replace(")", "").replace("+", "")
-        
-        # Check if exactly 10 digits
-        if not re.match(r"^\d{10}$", digits_only):
-            raise ValueError(
-                "Phone number must be exactly 10 digits. "
-                "Accepted formats: 1234567890, 123-456-7890, (123) 456-7890"
-            )
-        
-        return phone_cleaned.strip()
-
-    @field_validator("company")
-    @classmethod
-    def validate_company(cls, v: Optional[str]) -> Optional[str]:
-        """Validate and clean company field."""
-        if v:
-            return v.strip()
-        return v
 
 
 class ContactFormResponse(BaseModel):
@@ -272,23 +232,7 @@ async def submit_contact_form_wrapper(body: dict = Body(...)):
             input_val = error.get("input", "")
             
             # Return clear error for frontend
-            if field == "phone":
-                return JSONResponse(
-                    status_code=422,
-                    content={
-                        "success": False,
-                        "error": "❌ Invalid phone number",
-                        "field": "phone",
-                        "provided": str(input_val),
-                        "message": "Phone number must be exactly 10 digits",
-                        "accepted_formats": [
-                            "✓ Plain: 1234567890",
-                            "✓ With dashes: 123-456-7890",
-                            "✓ With parentheses: (123) 456-7890"
-                        ]
-                    }
-                )
-            elif field == "email":
+            if field == "email":
                 return JSONResponse(
                     status_code=422,
                     content={
@@ -300,14 +244,14 @@ async def submit_contact_form_wrapper(body: dict = Body(...)):
                         "example": "john@example.com"
                     }
                 )
-            elif field == "firstName":
+            elif field == "name":
                 return JSONResponse(
                     status_code=422,
                     content={
                         "success": False,
-                        "error": "❌ firstName is required",
-                        "field": "firstName",
-                        "message": "First name cannot be empty"
+                        "error": "❌ name is required",
+                        "field": "name",
+                        "message": "Name cannot be empty"
                     }
                 )
             elif field == "message":
@@ -333,11 +277,32 @@ async def submit_contact_form_wrapper(body: dict = Body(...)):
         
         # If validation passes, save the submission
         submission_id = save_submission(form_data)
+        
+        # Send email notification (non-blocking, don't fail if email fails)
+        try:
+            email_service = get_email_service()
+            if email_service is None:
+                # Initialize email service if not already configured
+                email_service = configure_email_service()
+            
+            # Send notification email
+            email_sent = await email_service.send_notification(
+                form_data.model_dump(), 
+                submission_id
+            )
+            if email_sent:
+                logger.info(f"Email notification sent for submission {submission_id}")
+            else:
+                logger.warning(f"Failed to send email notification for submission {submission_id}")
+        except Exception as e:
+            logger.error(f"Error sending email notification for submission {submission_id}: {str(e)}")
+            # Don't fail the entire request if email fails
+        
         return JSONResponse(
             status_code=200,
             content={
                 "success": True,
-                "message": "Contact form submitted successfully",
+                "message": "Contact form submitted successfully! Our team will get back to you soon.",
                 "submission_id": submission_id
             }
         )
@@ -481,14 +446,12 @@ async def view_contact_submissions():
             <section class="px-8 pb-8 flex-1 flex flex-col">
                 <div class="bg-white dark:bg-slate-900 rounded-xl border border-[#e2e8f0] dark:border-slate-800 shadow-sm flex-1 flex flex-col overflow-hidden">
                     <div class="overflow-x-auto flex-1 custom-scrollbar">
-                        <table class="w-full text-left border-collapse table-sticky-header min-w-[1000px]">
+                        <table class="w-full text-left border-collapse table-sticky-header min-w-[800px]">
                             <thead>
                                 <tr class="bg-slate-50 dark:bg-slate-800/50 border-b border-[#e2e8f0] dark:border-slate-800">
                                     <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">ID</th>
                                     <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">Date &amp; Time</th>
                                     <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">Contact Details</th>
-                                    <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">Company</th>
-                                    <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">Phone</th>
                                     <th class="py-4 px-4 text-[11px] font-bold uppercase tracking-wider text-[#617589]">Message Preview</th>
                                     <th class="py-4 px-6 text-[11px] font-bold uppercase tracking-wider text-[#617589] text-right">Actions</th>
                                 </tr>
@@ -496,7 +459,7 @@ async def view_contact_submissions():
                             <tbody class="divide-y divide-[#f0f2f4] dark:divide-slate-800" id="submissionsTableBody">
                                 {''.join([f'''
                                 <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group" 
-                                    data-search="{sub['data']['firstName'].lower()} {sub['data']['lastName'].lower()} {sub['data']['email'].lower()} {(sub['data'].get('company') or '').lower()} {(sub['data'].get('phone') or '').lower()} {sub['data']['message'].lower()}"
+                                    data-search="{sub['data']['name'].lower()} {sub['data']['email'].lower()} {sub['data']['message'].lower()}"
                                     data-date="{sub['submitted_at']}"
                                     data-id="{sub['submission_id']}">
                                     <td class="py-4 px-4">
@@ -510,17 +473,9 @@ async def view_contact_submissions():
                                     </td>
                                     <td class="py-4 px-4">
                                         <div class="flex flex-col">
-                                            <span class="text-sm font-bold">{sub['data']['firstName']} {sub['data']['lastName']}</span>
+                                            <span class="text-sm font-bold">{sub['data']['name']}</span>
                                             <a class="text-sm text-primary hover:underline" href="mailto:{sub['data']['email']}">{sub['data']['email']}</a>
                                         </div>
-                                    </td>
-                                    <td class="py-4 px-4">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700">
-                                            {sub['data'].get('company', 'N/A')}
-                                        </span>
-                                    </td>
-                                    <td class="py-4 px-4">
-                                        <span class="text-sm text-[#617589]">{sub['data'].get('phone', 'N/A')}</span>
                                     </td>
                                     <td class="py-4 px-4">
                                         <p class="text-sm text-[#617589] max-w-[400px] truncate">{sub['data']['message'][:80]}...</p>
@@ -533,7 +488,7 @@ async def view_contact_submissions():
                                 </tr>
                                 ''' for sub in submissions]) if submissions else '''
                                 <tr>
-                                    <td colspan="7" class="py-20 text-center">
+                                    <td colspan="5" class="py-20 text-center">
                                         <div class="flex flex-col items-center gap-4 text-slate-400">
                                             <span class="material-symbols-outlined text-[64px]">mail_outline</span>
                                             <div>
@@ -646,14 +601,8 @@ async def view_contact_submissions():
                                     </span>
                                 </div>
                                 <h2 class="text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                                    ${{data.firstName}} ${{data.lastName}}
+                                    ${{data.name}}
                                 </h2>
-                                ${{data.company ? `
-                                <div class="flex items-center gap-2 pt-1">
-                                    <span class="material-symbols-outlined !text-[20px] text-slate-400">corporate_fare</span>
-                                    <span class="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-semibold rounded-lg">${{data.company}}</span>
-                                </div>
-                                ` : ''}}
                             </div>
                             <button onclick="closeModal()" class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
                                 <span class="material-symbols-outlined">close</span>
@@ -661,32 +610,14 @@ async def view_contact_submissions():
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 p-8 md:p-10 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
-                        <div class="flex flex-col gap-2.5">
+                    <div class="p-8 md:p-10 bg-slate-50/50 dark:bg-slate-800/20 border-b border-slate-100 dark:border-slate-800">
+                        <div class="flex flex-col gap-2.5 max-w-md">
                             <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
                             <div class="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                                 <span class="text-base font-semibold text-slate-700 dark:text-slate-200">${{data.email}}</span>
                                 <button onclick="copyToClipboard('${{data.email}}')" class="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-primary/10 rounded-xl" title="Copy Email">
                                     <span class="material-symbols-outlined !text-[22px]">content_copy</span>
                                 </button>
-                            </div>
-                        </div>
-                        <div class="flex flex-col gap-2.5">
-                            <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Phone Number</label>
-                            <div class="flex items-center gap-3">
-                                <div class="flex-1 flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                                    <span class="text-base font-semibold text-slate-700 dark:text-slate-200">${{data.phone || 'N/A'}}</span>
-                                    ${{data.phone ? `
-                                    <button onclick="copyToClipboard('${{data.phone}}')" class="p-2 text-slate-400 hover:text-primary transition-colors hover:bg-primary/10 rounded-xl" title="Copy Phone">
-                                        <span class="material-symbols-outlined !text-[22px]">content_copy</span>
-                                    </button>
-                                    ` : ''}}
-                                </div>
-                                ${{data.phone ? `
-                                <a href="tel:${{data.phone}}" class="p-4 bg-primary text-white hover:bg-primary/90 transition-all rounded-2xl shadow-lg shadow-primary/20 active:scale-95" title="Call Now">
-                                    <span class="material-symbols-outlined !text-[22px]">call</span>
-                                </a>
-                                ` : ''}}
                             </div>
                         </div>
                     </div>
@@ -732,15 +663,12 @@ async def view_contact_submissions():
             }}
 
             function exportToCSV() {{
-                const headers = ['ID', 'Date', 'First Name', 'Last Name', 'Email', 'Phone', 'Company', 'Message'];
+                const headers = ['ID', 'Date', 'Name', 'Email', 'Message'];
                 const rows = submissions.map(sub => [
                     sub.submission_id,
                     sub.submitted_at,
-                    sub.data.firstName,
-                    sub.data.lastName,
+                    sub.data.name,
                     sub.data.email,
-                    sub.data.phone || '',
-                    sub.data.company || '',
                     sub.data.message
                 ]);
 

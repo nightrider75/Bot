@@ -3,6 +3,7 @@
 This module provides endpoints for:
 - Receiving contact form submissions from the website
 - Storing submissions as JSON files locally
+- Sending email notifications to configured recipients
 - Displaying a professional web UI to view all submissions
 """
 
@@ -16,6 +17,8 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse
 from loguru import logger
 from pydantic import BaseModel, EmailStr, field_validator
+
+from bot.services.email_service import configure_email_service, get_email_service
 
 router = APIRouter()
 
@@ -155,8 +158,9 @@ def load_all_submissions() -> list[dict]:
 async def submit_contact_form(form_data: ContactFormRequest):
     """Submit a contact form.
 
-    This endpoint receives contact form submissions from the website and stores them
-    as JSON files in the local filesystem.
+    This endpoint receives contact form submissions from the website, stores them
+    as JSON files in the local filesystem, and sends email notifications to 
+    configured recipients.
 
     **Required fields:**
     - firstName: User's first name
@@ -169,15 +173,42 @@ async def submit_contact_form(form_data: ContactFormRequest):
     - company: User's company name
 
     **Storage location:** /Users/chethan/Desktop/O/bot/form/
+    
+    **Email notifications sent to:**
+    - contact@avexi.ai
+    - mcsr55755@gmail.com
+    - dinesh@avexi.ai
 
     Returns:
         ContactFormResponse with success status and submission ID
     """
     try:
+        # Save the submission to file
         submission_id = save_submission(form_data)
+        
+        # Send email notification
+        email_service = get_email_service()
+        if email_service is None:
+            # Initialize email service if not already configured
+            email_service = configure_email_service()
+        
+        # Send notification email (non-blocking, don't fail if email fails)
+        try:
+            email_sent = await email_service.send_notification(
+                form_data.model_dump(), 
+                submission_id
+            )
+            if email_sent:
+                logger.info(f"Email notification sent for submission {submission_id}")
+            else:
+                logger.warning(f"Failed to send email notification for submission {submission_id}")
+        except Exception as e:
+            logger.error(f"Error sending email notification for submission {submission_id}: {str(e)}")
+            # Don't fail the entire request if email fails
+        
         return ContactFormResponse(
             success=True,
-            message="Contact form submitted successfully",
+            message="Contact form submitted successfully. Our team will get back to you soon!",
             submission_id=submission_id,
         )
     except HTTPException:
