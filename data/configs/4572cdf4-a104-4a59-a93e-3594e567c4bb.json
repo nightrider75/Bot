@@ -4,7 +4,7 @@
     "audio_recording": true,
     "initial_audio_id": null,
     "initial_audio_rate": null,
-    "initial_audio_phrase": "Hello! Welcome to our hotel. How can I assist you today?",
+    "initial_audio_phrase": "Hello! Welcome to Avéxi Grand Hotel. How can I assist you today?",
     "llm_aggregation_timeout": 0.3,
     "user_idle_enabled": true,
     "user_idle_timeout": 15,

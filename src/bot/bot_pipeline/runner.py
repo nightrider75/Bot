@@ -37,11 +37,11 @@ LANGUAGE_MAP = {
         "native": "English (US)",
         "stt_code": "en-US",
         "greetings": {
-            "hospitality": "Hello! Welcome to our hotel. How can I assist you today?",
-            "sales_outbound": "Hi there! This is a quick call to share some exciting opportunities with you. Do you have a moment?",
-            "sales_inbound": "Hi! Welcome to our sales line. How can I assist you today?",
-            "companion": "Hey there! It's nice to hear from you. What's on your mind today?",
-            "customer_support": "Hello! Thank you for contacting customer support. How can I help you today?",
+            "hospitality": "Hello! Welcome to Avéxi Grand Hotel. I'm Avéxi, your assistant. How can I help you today?",
+            "sales_outbound": "Hi! This is Avéxi from Avéxi Technologies. I'm calling to share some exciting AI solutions with you. Do you have a moment?",
+            "sales_inbound": "Hello! Welcome to Avéxi Technologies. I'm Avéxi, your AI sales assistant. How can I help you today?",
+            "companion": "Hello! I'm Avéxi, your AI companion. It's great to connect with you! What's on your mind today?",
+            "customer_support": "Hello! Thank you for contacting Avéxi Technologies support. I'm Avéxi, your AI assistant. How can I help you today?",
         },
     },
     "en-GB": {
