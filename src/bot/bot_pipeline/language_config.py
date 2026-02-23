@@ -22,7 +22,7 @@ class LanguageConfig:
         # English variants - Chirp3-HD voices (streaming-compatible)
         "en": ("en-US-Chirp3-HD-Aoede", "en-US"),  # Default English (US)
         "en-us": ("en-US-Chirp3-HD-Aoede", "en-US"),  # US English
-        "en-gb": ("en-GB-Chirp-HD-F", "en-GB"),  # UK English
+        "en-gb": ("en-GB-Chirp3-HD-Aoede", "en-GB"),  # UK English
         "en-in": ("en-IN-Chirp-HD-O", "en-IN"),  # Indian English
         "en-au": ("en-AU-Chirp3-HD-Aoede", "en-AU"),  # Australian English
         # Hindi - Now has Chirp3-HD support!
