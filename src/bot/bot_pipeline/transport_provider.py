@@ -22,14 +22,16 @@ class TransportProvider:
         connection: WebSocket | Any,
     ):
         # Control mixer settings
-        # Use more lenient VAD parameters for websocket transport
+        # Use configured VAD parameters for all transport types
         if transport_config.provider == TransportType.BOT_WEBSOCKET:
-            # Very lenient VAD settings for websocket testing
+            # Use configured VAD params, but apply sensible websocket defaults
+            # if no custom config was provided. These defaults are tuned
+            # to avoid false interrupts from ambient noise / speaker echo.
             vad_params = VADParams(
-                confidence=0.3,  # Even lower confidence threshold
-                stop_secs=1.0,  # Longer silence to stop
-                start_secs=0.1,  # Very short voice to start
-                min_volume=0.05,  # Very low volume threshold
+                confidence=transport_config.vad_params.confidence_threshold,
+                stop_secs=transport_config.vad_params.stop_secs,
+                start_secs=max(transport_config.vad_params.start_secs, 0.3),  # At least 300ms to confirm speech
+                min_volume=max(transport_config.vad_params.volume_threshold, 0.4),  # At least 0.4 to avoid echo
             )
         else:
             # Use configured VAD parameters for other transports

@@ -5,6 +5,7 @@ from fastapi import WebSocket
 from loguru import logger
 from pydub import AudioSegment
 from bot_engine.frames.frames import (
+    LLMMessagesAppendFrame,
     LLMMessagesUpdateFrame,
     OutputAudioRawFrame,
     TTSSpeakFrame,
@@ -266,12 +267,19 @@ class BotPipeline(BaseObject):
                         f"Adding initial audio phrase to transcript as assistant message: '{pipeline_config.initial_audio_phrase}'"
                     )
 
-                    # Add the initial audio phrase to the LLM context & transcript
-                    self.context.add_message(
-                        {
-                            "role": "assistant",
-                            "content": pipeline_config.initial_audio_phrase,
-                        }
+                    # Queue the assistant message as a frame so it is appended
+                    # AFTER the LLMMessagesUpdateFrame (from flow_manager.initialize)
+                    # is processed.  Using context.add_message() directly would be
+                    # overwritten when set_messages() runs for the update frame.
+                    await self.task.queue_frame(
+                        LLMMessagesAppendFrame(
+                            messages=[
+                                {
+                                    "role": "assistant",
+                                    "content": pipeline_config.initial_audio_phrase,
+                                }
+                            ]
+                        )
                     )
 
             except Exception as e:
@@ -290,12 +298,19 @@ class BotPipeline(BaseObject):
 
                 logger.info("Initial audio phrase queued successfully")
 
-                # Add the initial audio phrase to the LLM context & transcript
-                self.context.add_message(
-                    {
-                        "role": "assistant",
-                        "content": templatized,
-                    }
+                # Queue the assistant message as a frame so it is appended
+                # AFTER the LLMMessagesUpdateFrame (from flow_manager.initialize)
+                # is processed.  Using context.add_message() directly would be
+                # overwritten when set_messages() runs for the update frame.
+                await self.task.queue_frame(
+                    LLMMessagesAppendFrame(
+                        messages=[
+                            {
+                                "role": "assistant",
+                                "content": templatized,
+                            }
+                        ]
+                    )
                 )
 
             except Exception as e:
